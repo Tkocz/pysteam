@@ -1,34 +1,45 @@
 from __future__ import print_function
 from steamwebapi.api import ISteamUser, IPlayerService, ISteamUserStats
-
 import sys
+import time
 
 import numpy as np
 from numpy.random import rand
 from numpy import matrix
 from pyspark.sql import SparkSession
 
-steamID = [76561198048730871, 76561198180821795, 76561198008911412]
-
+steamID = ['76561198048730871', '76561198180821795', '76561198008911412']
 steamuserinfo = ISteamUser()
 playerserviceinfo = IPlayerService()
 
+try:
+    y = 0
+    for n in steamID:
 
-usersummary = steamuserinfo.get_player_summaries(steamID)
-owned_games = playerserviceinfo.get_owned_games(steamID[2])['response']['games']
-friendslist = steamuserinfo.get_friends_list(steamID[1])['friendslist']['friends']
-steamid_list =[]
-game_list = []
-for i in owned_games:
-    game_list.append(i['name'])
-for i in friendslist:
-    steamid_list.append(i['steamid'])
-print("\n".join(game_list))
-print("\n".join(steamid_list))
-print(usersummary)
-print(owned_games)
-print(friendslist)
+        #usersummary = steamuserinfo.get_player_summaries(n)['response']['players']
+        #owned_games = playerserviceinfo.get_owned_games(n)['response']['games']
+        friendslist = steamuserinfo.get_friends_list(n)['friendslist']['friends']
+        steamid_list =[]
+        game_list = []
+        #for i in owned_games:
+        #    game_list.append(i['name'])
+        for i in friendslist:
+            if i['steamid'] not in steamID:
+                steamid_list.append(i['steamid'])
+                steamID.append(i['steamid'])
+        print("\n".join(game_list))
+        print("\n".join(steamid_list))
+        #print(usersummary)
+        #print(owned_games)
+        print(friendslist)
+        if y > 5:
+            break
+        y += 1
 
+finally:
+        print('-----------------------------')
+        print(len(steamID))
+        print(steamID)
 
 
 
