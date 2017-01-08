@@ -1,8 +1,7 @@
 
 import json
 import pandas as pd
-import numpy as np
-from steamwebapi.api import ISteamUser, IPlayerService, ISteamUserStats
+from steamwebapi.api import IPlayerService, ISteamUserStats
 
 playerserviceinfo = IPlayerService()
 steamuserstats = ISteamUserStats()
