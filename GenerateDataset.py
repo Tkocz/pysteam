@@ -18,7 +18,7 @@ def achievementprocentage(ach):
     return len(achieved) / len(ach)
 
 
-json_data = [76561198048730871, 76561198180821795, 76561198008911412]
+json_data = [76561198008911412, 76561198048730871, 76561198180821795]
 #json_file = open('steamkey.json', 'r')
 #json_data = json.loads(json_file.read())
 #json_file.close()
