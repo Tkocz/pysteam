@@ -19,7 +19,7 @@ def achievementprocentage(ach):
 
 
 json_data = [76561198008911412, 76561198048730871, 76561198180821795]
-#json_file = open('steamkey.json', 'r')
+#json_file = open('Resources/steamkey.json', 'r')
 #json_data = json.loads(json_file.read())
 #json_file.close()
 
@@ -42,4 +42,4 @@ for index, steamid in enumerate(json_data):
             except:
                 df.set_value(jointid, 'achievements', None)
 
-df.to_csv('dataset.csv', mode='w+')
+df.to_csv('Resources/dataset.csv', mode='w+')

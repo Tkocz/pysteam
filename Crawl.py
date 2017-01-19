@@ -16,6 +16,6 @@ while len(steamID) < 10000:
     print(count)
     count += 1
 print(len(steamID))
-json_file = open('steamkey.json', 'w')
+json_file = open('Resources/steamkey.json', 'w')
 json.dump(steamID, json_file)
 json_file.close()
