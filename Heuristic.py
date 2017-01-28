@@ -5,14 +5,16 @@ import numpy as np
 dataset = pd.read_csv('Resources/dataset.csv')
 
 games = np.unique(dataset['appid'])
-
+steamlist = []
 matrix = pd.DataFrame(columns=games)
-
 for i, row in enumerate(dataset.values):
-    matrix.set_value(row[1], row[2], 1)
+    steamlist.append((row[1], row[2], 1))
 
-matrix = matrix.fillna(value=0)
-print(matrix.values)
+matrix = pd.DataFrame().from_records(steamlist)
+print(steamlist)
+print(matrix)
 print('nGames: ' + str(len(games)))
 
-matrix.to_csv('Resources/formateddataset.csv', mode='w+')
+
+
+matrix.to_csv('Resources/formateddataset.csv', mode='w+', header=None, index=None, sep=',')

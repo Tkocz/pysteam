@@ -33,7 +33,7 @@ for index, steamid in enumerate(json_data):
         for game in games:
             jointid = str(steamid) + "/" + str(game['appid'])
             df.set_value(jointid, 'playtime_forever', game['playtime_forever'])
-            df.set_value(jointid, 'steamid', steamid)
+            df.set_value(jointid, 'steamid', int(str(steamid).replace('76561198', '')))
             df.set_value(jointid, 'appid', game['appid'])
             try:
                 achievements = steamuserstats.get_player_achievements(steamid, game['appid'])['playerstats'][
