@@ -6,14 +6,15 @@ steamID = [76561198048730871, 76561198180821795, 76561198008911412]
 steamuserinfo = ISteamUser()
 playerserviceinfo = IPlayerService()
 count = 0;
-while len(steamID) < 10000:
+amount = 1000
+while len(steamID) < amount:
     state = steamuserinfo.get_player_summaries(steamID[count])['response']['players'][0]['communityvisibilitystate']
     if state == 3:
         friendslist = steamuserinfo.get_friends_list(steamID[count])['friendslist']['friends']
         for i in friendslist:
             if i['steamid'] not in steamID:
                 steamID.append(int(i['steamid']))
-    print(count)
+    print(round((len(steamID) / amount) * 100, 0), '%')
     count += 1
 print(len(steamID))
 json_file = open('Resources/steamkey.json', 'w')
