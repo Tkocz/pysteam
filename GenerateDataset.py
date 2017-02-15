@@ -22,7 +22,7 @@ iddict = dict()
 
 
 #json_data = [76561198008911412, 76561198048730871, 76561198180821795]
-json_file = open('Resources/steamkey100.json', 'r')
+json_file = open('Resources/steamkey1000.json', 'r')
 json_data = json.loads(json_file.read())
 json_file.close()
 
@@ -48,5 +48,5 @@ for index, steamid in enumerate(json_data):
             #except:
              #   df.set_value(jointid, 'achievements', None)
 print(iddict)
-df.to_csv('Resources/dataset100.csv', mode='w+')
+df.to_csv('Resources/dataset1000.csv', mode='w+')
 

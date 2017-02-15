@@ -17,6 +17,6 @@ while len(steamID) < amount:
     print(round((len(steamID) / amount) * 100, 0), '%')
     count += 1
 print(len(steamID))
-json_file = open('Resources/steamkey.json', 'w')
+json_file = open('Resources/steamkey1000.json', 'w')
 json.dump(steamID, json_file)
 json_file.close()
