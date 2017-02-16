@@ -2,6 +2,25 @@
 import pandas as pd
 import numpy as np
 
+
+def evaluatetime(time):
+
+    time = time / 60
+    # if time == 0:
+    #     return 0
+    if time >= 0 and time <= 1:
+        return 0
+    else:
+        return 1
+    # if time > 1 and time <= 5:
+    #     return 2
+    # if time > 5 and time <= 20:
+    #     return 3
+    # if time > 20 and time < 50:
+    #     return 4
+    # else:
+    #     return 5
+
 dataset = pd.read_csv('Resources/dataset1000.csv')
 
 games = np.unique(dataset['appid'])
