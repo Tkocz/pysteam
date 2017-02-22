@@ -25,7 +25,7 @@ spark.sparkContext.setLogLevel('OFF')
 
 # params
 ranks = np.arange(8, 20, 2)
-lambdas = np.linspace(0.01, 0.5, 10)
+lambdas = np.linspace(0.01, 0.5, 10.0)
 numIters = np.arange(8, 20, 2)
 alpha = np.arange(8, 40, 2)
 bestModel = None
