@@ -67,7 +67,7 @@ for rank, lmbda, numIter, alf in indexes:
         bestAlpha = alf
 
     count += 1
-    print(round((count / len(indexes)) * 100, 0), '%')
+    print('\r{0}%'.format(round((count / len(indexes)) * 100, 0)), end="", flush=True)
 
 print("The best model was trained on evalData with rank = %d, lambda = %.2f, alpha = %d, " % (bestRank, bestLambda, bestAlpha) \
       + "numIter = %d and RMSE %f." % (bestNumIter, bestValidationRmse))

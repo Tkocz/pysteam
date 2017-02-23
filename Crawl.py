@@ -14,9 +14,7 @@ while len(steamID) < amount:
         for i in friendslist:
             if i['steamid'] not in steamID:
                 steamID.append(int(i['steamid']))
-    print(round((len(steamID) / amount) * 100, 0), '%')
-    count += 1
-print(len(steamID))
+    print('\r{0}%'.format(round(len(steamID) / amount * 100)), end="", flush=True)
 json_file = open('Resources/steamkey1000.json', 'w')
 json.dump(steamID, json_file)
 json_file.close()

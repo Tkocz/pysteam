@@ -24,10 +24,10 @@ def achievementprocentage(ach):
 iddict = dict()
 
 
-#json_data = [76561198048730871, 76561198180821795, 76561198008911412]
-json_file = open('Resources/steamkey100.json', 'r')
-json_data = json.loads(json_file.read())
-json_file.close()
+json_data = [76561198048730871, 76561198180821795, 76561198008911412]
+#json_file = open('Resources/steamkey100.json', 'r')
+#json_data = json.loads(json_file.read())
+#json_file.close()
 
 df = pd.DataFrame(None, columns=features)
 df.index.names = ['steamID/appID']
@@ -40,7 +40,6 @@ for index, steamid in enumerate(json_data):
     if len(response) > 1:
         games = response['games']
         id = id + 1
-        print(round((index/len(json_data)) * 100, 0), '%')
         iddict[id] = steamid
         for game in games:
             jointid = str(steamid) + "/" + str(game['appid'])
@@ -63,6 +62,6 @@ for index, steamid in enumerate(json_data):
             #   df.set_value(jointid, 'achievements', achievementprocentage(achievements))
             #except:
             #   df.set_value(jointid, 'achievements', None)
-print(iddict)
+        print('\r{0}%'.format(round((index + 1) / len(json_data) * 100)), end="", flush=True)
 df.to_csv('Resources/dataset100CB.csv', mode='w+')
 
