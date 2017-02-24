@@ -79,10 +79,11 @@ print("The best model was trained on evalData with rank = %d, lambda = %.2f, alp
 # brier score
 # AUC
 
-predictions = bestModel.transform(test)
-test = spark.createDataFrame([(1000, 80)], ["steamid", "appid"])
-predictions2 = sorted(bestModel.transform(test).collect(), key=lambda r: r[0])
-print('test', predictions2)
+print(test)
+print(type(test))
+test = spark.createDataFrame([(1000, 730)], ["steamid", "appid"])
+predictions2 = bestModel.transform(test)
+print('test', predictions2.collect())
 setvalues = ['all', 'zeroes', 'ones']
 
 em = pd.DataFrame(columns=['rmse', 'mse', 'mae'])
@@ -91,7 +92,9 @@ em.index.names = ["set values"]
 ones = predictions.where("rating=1")
 zeroes = predictions.where("rating=0")
 predictors = {'all': predictions, 'zeroes': zeroes, 'ones': ones}
-
+print(ones)
+#fpr, tpr, thresholds = roc_curve(predictions, pred, pos_label=2)
+#auc(fpr, tpr)
 
 for s, p in predictors.items():
     em.set_value(s, "rmse", evaluator.setParams(metricName="rmse").evaluate(p))
