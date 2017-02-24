@@ -44,7 +44,6 @@ rating = [(1000, 730, 1.0)]
 testRating = spark.createDataFrame(rating, ["steamid", "appid", "rating"])
 (training, validation, test) = dataset.randomSplit([0.6, 0.2, 0.2])
 training.union(testRating)
-print(type(training))
 evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
 bevaluator = BinaryClassificationEvaluator(labelCol="rating")
 
@@ -71,7 +70,7 @@ for rank, lmbda, numIter, alf in indexes:
         bestAlpha = alf
 
     count += 1
-    print('\r{0}%'.format(round((count / len(indexes)) * 100, 0)), end="", flush=True)
+    #print('\r{0}%'.format(round((count / len(indexes)) * 100, 0)), end="", flush=True)
 
 print("The best model was trained on evalData with rank = %d, lambda = %.2f, alpha = %d, " % (bestRank, bestLambda, bestAlpha) \
       + "numIter = %d and RMSE %f." % (bestNumIter, bestValidationRmse))
@@ -79,8 +78,6 @@ print("The best model was trained on evalData with rank = %d, lambda = %.2f, alp
 # brier score
 # AUC
 
-print(test)
-print(type(test))
 test = spark.createDataFrame([(1000, 730)], ["steamid", "appid"])
 predictions2 = bestModel.transform(test)
 print('test', predictions2.collect())
