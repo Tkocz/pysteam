@@ -39,7 +39,7 @@ print('nUsers:', len(dataset.index), 'Sparsity:', 1 - sdf.density, 'Density:', s
 steamlist = list()
 for i in matrix.index:
    for j in matrix.columns:
-       steamlist.append((i, j, matrix.ix[i,j]))
+       steamlist.append((i, j, matrix.ix[i, j]))
 print(matrix)
 matrix = pd.DataFrame().from_records(steamlist)
 matrix.to_csv('Resources/formateddataset1000.csv', header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')

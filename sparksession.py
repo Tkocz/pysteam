@@ -24,6 +24,8 @@ spark.sparkContext.setLogLevel('OFF')
 # run1 : The best model was trained with rank = 12, lambda = 0.05, alpha = 10and numIter = 12, and its RMSE on the test set is 0.257741. mean-square error = 0.009006494757883858 mean absolute error = 0.06807511706369994 lmbda 0.01, 0.02, 0.05
 # run2 : The best model was trained with rank = 12, lambda = 0.15, alpha = 10and numIter = 12, and its RMSE on the test set is 0.259563. mean-square error = 0.008499430241066145 mean absolute error = 0.0668242950350116  lambdas = [0.05, 0.1, 0.15]
 
+
+
 # params
 ranks = np.arange(8, 20, 2)
 lambdas = np.linspace(0.01, 0.5, 10)
@@ -38,9 +40,11 @@ bestAlpha = 0
 
 # process data
 dataset = spark.read.csv('Resources/ptFormateddataset1000.csv', header=True, inferSchema=True)
-
+rating = [(1000, 730, 1.0)]
+testRating = spark.createDataFrame(rating, ["steamid", "appid", "rating"])
 (training, validation, test) = dataset.randomSplit([0.6, 0.2, 0.2])
-
+training.union(testRating)
+print(type(training))
 evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
 bevaluator = BinaryClassificationEvaluator(labelCol="rating")
 
@@ -76,7 +80,9 @@ print("The best model was trained on evalData with rank = %d, lambda = %.2f, alp
 # AUC
 
 predictions = bestModel.transform(test)
-
+test = spark.createDataFrame([(1000, 80)], ["steamid", "appid"])
+predictions2 = sorted(bestModel.transform(test).collect(), key=lambda r: r[0])
+print('test', predictions2)
 setvalues = ['all', 'zeroes', 'ones']
 
 em = pd.DataFrame(columns=['rmse', 'mse', 'mae'])
