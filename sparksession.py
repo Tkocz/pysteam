@@ -23,8 +23,8 @@ def flipBit(df):
     newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
     newdf = spark.createDataFrame(newpdf)
     newdf = newdf.union(zeroes)
-    user = df.subtract(newdf)
-    return newdf, user
+    target = df.subtract(newdf)
+    return newdf, target
 
 spark = SparkSession \
     .builder \
@@ -52,8 +52,8 @@ bestAlpha = 0
 dataset = spark.read.csv('Resources/ptFormateddataset1000.csv', header=True, inferSchema=True)
 
 (training, validation, test) = dataset.randomSplit([0.6, 0.2, 0.2])
-training, testUser = flipBit(training)
-testUser.show()
+training, target = flipBit(training)
+target.show()
 evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
 bevaluator = BinaryClassificationEvaluator(labelCol="rating")
 
@@ -89,8 +89,11 @@ print("The best model was trained on evalData with rank = %d, lambda = %.2f, alp
 # brier score
 # AUC
 
-testPrediction = bestModel.transform(testUser)
-print('testprediction', testPrediction.collect())
+targetPrediction = bestModel.transform(target)
+print('target prediction', targetPrediction.collect())
+print('target RMSE:', evaluator.setParams(metricName="rmse").evaluate(targetPrediction))
+print('target MSE:', evaluator.setParams(metricName="mse").evaluate(targetPrediction))
+print('target MAE:', evaluator.setParams(metricName="mae").evaluate(targetPrediction))
 
 predictions = bestModel.transform(test)
 
