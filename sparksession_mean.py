@@ -73,7 +73,6 @@ print("The best model was trained on evalData with rank = %d, lambda = %.2f, alp
 
 bestTrainModel = None
 valtrainrmse = float("inf")
-
 (testtrain, testval) = training.randomSplit([0.6, 0.4])
 for i in range(10):
     (opttrain, optval) = testtrain.randomSplit([0.8, 0.2])

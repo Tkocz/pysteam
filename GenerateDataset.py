@@ -62,6 +62,6 @@ for index, steamid in enumerate(json_data):
             #   df.set_value(jointid, 'achievements', achievementprocentage(achievements))
             #except:
             #   df.set_value(jointid, 'achievements', None)
-        print('\r{0}%'.format(round((index + 1) / len(json_data) * 100)), end="", flush=True)
+        #print('\r{0}%'.format(round((index + 1) / len(json_data) * 100)), end="", flush=True)
 df.to_csv('Resources/dataset100CB.csv', mode='w+')
 

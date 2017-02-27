@@ -61,7 +61,6 @@ class ContentBasedFiltering():
                 if genre != None:
                     gm.set_value(id, genre, 1)
             count += 1
-            print('\rGenerating GameMatrix: {0}%'.format(round((count / uniqids.shape[0]) * 100)), end="", flush=True)
         gm = gm.fillna(value=0)
         print('\n')
         self.gm = gm
@@ -79,7 +78,6 @@ class ContentBasedFiltering():
         for id1, id2 in itertools.product(appids, appids):
             simMatrix.set_value(id1, id2, 1 - cosine(tdataset[id1], tdataset[id2]))
             count += 1
-            print('\rGenerating SimMatrix: {0}%'.format(round((count / (len(appids) * 2)) * 100)), end="", flush=True)
         self.sm = simMatrix
         if save:
             simMatrix.to_csv('Resources/gamematrix.csv')

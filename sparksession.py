@@ -14,6 +14,18 @@ import pandas as pd
 import numpy as np
 import itertools
 
+def flipBit(df):
+    ones = df[df.rating == 1.0].toPandas().values
+    zeroes = df[df.rating == 0.0]
+    index = np.random.choice(ones.shape[0], 1, replace=False)
+    ones[index, 2] = 0.0
+    newpdf = pd.DataFrame(ones, columns=["steamid", "appid", "rating"])
+    newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
+    newdf = spark.createDataFrame(newpdf)
+    newdf = newdf.union(zeroes)
+    user = df.subtract(newdf)
+    return newdf, user
+
 spark = SparkSession \
     .builder \
     .appName("pysteam") \
@@ -23,8 +35,6 @@ spark.sparkContext.setLogLevel('OFF')
 
 # run1 : The best model was trained with rank = 12, lambda = 0.05, alpha = 10and numIter = 12, and its RMSE on the test set is 0.257741. mean-square error = 0.009006494757883858 mean absolute error = 0.06807511706369994 lmbda 0.01, 0.02, 0.05
 # run2 : The best model was trained with rank = 12, lambda = 0.15, alpha = 10and numIter = 12, and its RMSE on the test set is 0.259563. mean-square error = 0.008499430241066145 mean absolute error = 0.0668242950350116  lambdas = [0.05, 0.1, 0.15]
-
-
 
 # params
 ranks = np.arange(8, 20, 2)
@@ -40,10 +50,10 @@ bestAlpha = 0
 
 # process data
 dataset = spark.read.csv('Resources/ptFormateddataset1000.csv', header=True, inferSchema=True)
-rating = [(1000, 730, 1.0)]
-testRating = spark.createDataFrame(rating, ["steamid", "appid", "rating"])
+
 (training, validation, test) = dataset.randomSplit([0.6, 0.2, 0.2])
-training.union(testRating)
+training, testUser = flipBit(training)
+testUser.show()
 evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
 bevaluator = BinaryClassificationEvaluator(labelCol="rating")
 
@@ -75,12 +85,15 @@ for rank, lmbda, numIter, alf in indexes:
 print("The best model was trained on evalData with rank = %d, lambda = %.2f, alpha = %d, " % (bestRank, bestLambda, bestAlpha) \
       + "numIter = %d and RMSE %f." % (bestNumIter, bestValidationRmse))
 
+
 # brier score
 # AUC
 
-test = spark.createDataFrame([(1000, 730)], ["steamid", "appid"])
-predictions2 = bestModel.transform(test)
-print('test', predictions2.collect())
+testPrediction = bestModel.transform(testUser)
+print('testprediction', testPrediction.collect())
+
+predictions = bestModel.transform(test)
+
 setvalues = ['all', 'zeroes', 'ones']
 
 em = pd.DataFrame(columns=['rmse', 'mse', 'mae'])
@@ -89,7 +102,7 @@ em.index.names = ["set values"]
 ones = predictions.where("rating=1")
 zeroes = predictions.where("rating=0")
 predictors = {'all': predictions, 'zeroes': zeroes, 'ones': ones}
-print(ones)
+
 #fpr, tpr, thresholds = roc_curve(predictions, pred, pos_label=2)
 #auc(fpr, tpr)
 
