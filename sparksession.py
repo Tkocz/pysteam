@@ -14,10 +14,11 @@ import pandas as pd
 import numpy as np
 import itertools
 
-def flipBit(df):
+def flipBit(df, nUser):
     ones = df[df.rating == 1.0].toPandas().values
     zeroes = df[df.rating == 0.0]
-    index = np.random.choice(ones.shape[0], 1, replace=False)
+    id = np.array(np.unique(ones[:, 0]), dtype=int)
+    index = np.random.choice(id, nUser, replace=False)
     ones[index, 2] = 0.0
     newpdf = pd.DataFrame(ones, columns=["steamid", "appid", "rating"])
     newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
@@ -49,17 +50,16 @@ bestNumIter = -1
 bestAlpha = 0
 
 # process data
-dataset = spark.read.csv('Resources/ptFormateddataset1000.csv', header=True, inferSchema=True)
-
+dataset = spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
 (training, validation, test) = dataset.randomSplit([0.6, 0.2, 0.2])
-training, target = flipBit(training)
+training, target = flipBit(training, 100)
 target.show()
 evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
 bevaluator = BinaryClassificationEvaluator(labelCol="rating")
 
 pm = [i for i in itertools.product(ranks, lambdas, numIters, alpha)]
 indexes = np.random.permutation(len(pm))
-indexes = [pm[i] for i in indexes[:5]]
+indexes = [pm[i] for i in indexes[:10]]
 count = 0
 for rank, lmbda, numIter, alf in indexes:
 

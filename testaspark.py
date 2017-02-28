@@ -6,19 +6,19 @@ from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALS
 
 
-def flipBit(df):
-    ratings = df.toPandas().values
-    while (True):
-        index = np.random.choice(ratings.shape[0], 1, replace=False)
-        if ratings[index, 2] == 1.0:
-            break
-    ratings[index, 2] = 0.0
-    id = int(ratings[index, 0])
-    newpdf = pd.DataFrame(ratings, columns=["user", "item", "rating"])
+def flipBit(df, nUser):
+    ones = df[df.rating == 1.0].toPandas().values
+    zeroes = df[df.rating == 0.0]
+    id = np.array(np.unique(ones[:, 0]), dtype=int)
+    index = np.random.choice(id, nUser, replace=False)
+    print(index)
+    ones[index, 2] = 0.0
+    newpdf = pd.DataFrame(ones, columns=["user", "item", "rating"])
     newpdf[["user", "item"]] = newpdf[["user", "item"]].astype(int)
     newdf = spark.createDataFrame(newpdf)
-    user = df.subtract(newdf)
-    return newdf, user, df.filter(df.user == id)
+    newdf = newdf.union(zeroes)
+    target = df.subtract(newdf)
+    return newdf, target
 
 spark = SparkSession \
     .builder \
@@ -36,10 +36,9 @@ df = spark.createDataFrame(
 
 df.show()
 #print(df[random.randin(0, df.groupBy(df.user).count())])
-newdf, change, user = flipBit(df)
+newdf, user = flipBit(df, 3)
 user.show()
 newdf.show()
-change.show()
 
 als = ALS(rank=12, maxIter=16, regParam=5.0, alpha=25.0,  implicitPrefs=True, userCol="user", itemCol="item", ratingCol="rating")
 

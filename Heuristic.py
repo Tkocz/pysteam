@@ -21,7 +21,7 @@ def evaluatetime(time):
     # else:
     #     return 5
 
-dataset = pd.read_csv('Resources/dataset1000.csv')
+dataset = pd.read_csv('Resources/dataset10000.csv')
 
 games = np.unique(dataset['appid'])
 steamlist = []
@@ -42,4 +42,4 @@ for i in matrix.index:
        steamlist.append((i, j, matrix.ix[i, j]))
 print(matrix)
 matrix = pd.DataFrame().from_records(steamlist)
-matrix.to_csv('Resources/formateddataset1000.csv', header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')
+matrix.to_csv('Resources/formateddataset10000.csv', header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')

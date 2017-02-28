@@ -1,3 +1,4 @@
+from __future__ import print_function
 import itertools
 from scipy.spatial.distance import cosine
 import pandas as pd
@@ -55,12 +56,11 @@ class ContentBasedFiltering():
 
         gm = pd.DataFrame()
         gm.index.names = ["appid"]
-        count = 0;
-        for id in appids:
+        for i, id in enumerate(appids):
             for genre in self._getApps(id):
                 if genre != None:
                     gm.set_value(id, genre, 1)
-            count += 1
+            print('\r{0}%'.format(round(i / len(appids) * 100)), end="", flush=True)
         gm = gm.fillna(value=0)
         print('\n')
         self.gm = gm
@@ -78,6 +78,7 @@ class ContentBasedFiltering():
         for id1, id2 in itertools.product(appids, appids):
             simMatrix.set_value(id1, id2, 1 - cosine(tdataset[id1], tdataset[id2]))
             count += 1
+            print('\r{0}%'.format(round(count / (len(appids) * 2) * 100)), end="", flush=True)
         self.sm = simMatrix
         if save:
             simMatrix.to_csv('Resources/gamematrix.csv')
@@ -88,7 +89,6 @@ class ContentBasedFiltering():
         df = self.sm.drop(user, axis=0)
         df = df[(user)]
         df['TopN'] = df.max(axis=1)
-        #print(df.sort_values(['TopN'], ascending=False))
         appids = df.sort_values(['TopN'], ascending=False).head(nRec).index.values
         return appids
 
