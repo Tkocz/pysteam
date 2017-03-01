@@ -51,6 +51,7 @@ bestAlpha = 0
 
 # process data
 dataset = spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
+
 (training, validation, test) = dataset.randomSplit([0.6, 0.2, 0.2])
 training, target = flipBit(training, 100)
 target.show()

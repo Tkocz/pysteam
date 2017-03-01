@@ -28,7 +28,7 @@ json_file.close()
 
 print(len(json_data))
 
-df = pd.DataFrame(columns=features)
+df = pd.DataFrame(None, columns=features)
 df.index.names = ['steamID/appID']
 id = -1;
 for index, steamid in enumerate(json_data):
@@ -38,7 +38,10 @@ for index, steamid in enumerate(json_data):
         id = id + 1
         iddict[id] = steamid
         for game in games:
-            df = df.append(pd.DataFrame([[int(id), int(game['appid']), int(game['playtime_forever'])]],columns=features))
+            jointid = str(steamid) + "/" + str(game['appid'])
+            df.set_value(jointid, 'playtime_forever', int(game['playtime_forever']))
+            df.set_value(jointid, 'steamid', int(id))
+            df.set_value(jointid, 'appid', int(game['appid']))
         print('\r{0}%'.format(round((index + 1) / len(json_data) * 100)), end="", flush=True)
 df.to_csv('Resources/dataset10000.csv', mode='w+')
 

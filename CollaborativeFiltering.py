@@ -15,8 +15,8 @@ import itertools
 
 class CollaborativFiltering():
     """Content-based Filtering based on content similarities with Top-N recommendations."""
+
     __author__ = "Jim Glansk, Martin Bergqvist"
-    __copyright__ = "Copyright 2017, OpenHorse"
 
     def __init__(self):
         self.spark = SparkSession \
@@ -115,7 +115,7 @@ class CollaborativFiltering():
         count = 0
         for rank, lmbda, numIter, alf in indexes:
             for i in range(numVal):
-                (opttrain, optval) = validation.randomSplit([0.8, 0.2])
+                (opttrain, optval) = X.randomSplit([0.8, 0.2])
                 model = ALS(implicitPrefs=True, rank=rank, regParam=lmbda, maxIter=numIter, alpha=alf,
                             userCol="steamid",
                             itemCol="appid", ratingCol="rating").fit(opttrain)
@@ -141,11 +141,11 @@ class CollaborativFiltering():
         self.bestModel = bestModel
         return bestModel
 
-    def flipBit(self, df, nUser):
+    def flipBit(self, df, nUsers):
         ones = df[df.rating == 1.0].toPandas().values
         zeroes = df[df.rating == 0.0]
         id = np.array(np.unique(ones[:, 0]), dtype=int)
-        index = np.random.choice(id, nUser, replace=False)
+        index = np.random.choice(id, nUsers, replace=False)
         ones[index, 2] = 0.0
         newpdf = pd.DataFrame(ones, columns=["steamid", "appid", "rating"])
         newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
@@ -154,16 +154,26 @@ class CollaborativFiltering():
         target = df.subtract(newdf)
         return newdf, target
 
-    def takeSamples(self, df):
-        pass
+    def takeSamples(self, df, nUsers):
+        ones = df[df.rating == 1.0].toPandas().values
+        zeroes = df[df.rating == 0.0]
+        id = np.array(np.unique(ones[:, 0]), dtype=int)
+        index = np.random.choice(id, nUsers, replace=False)
+        ones[index, 2] = 0.0
+        newpdf = pd.DataFrame(ones, columns=["steamid", "appid", "rating"])
+        newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
+        newdf = self.spark.createDataFrame(newpdf)
+        newdf = newdf.union(zeroes)
+        target = df.subtract(newdf)
+        return newdf, target
 
 # test CF
-CF = CollaborativFiltering()
-dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
-(training, validation) = dataset.randomSplit([0.9, 0.1])
-CF.paramOpt(validation, 1, 1)
-#CF.evalModel(training, 1)
-(train, test) = training.randomSplit([0.8, 0.2])
-CF.fit(train)
-predictions = CF.predict(test)
-#print(predictions.collect())
+# CF = CollaborativFiltering()
+# dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
+# (training, validation) = dataset.randomSplit([0.9, 0.1])
+# CF.paramOpt(validation, 1, 1)
+# #CF.evalModel(training, 1)
+# (train, test) = training.randomSplit([0.8, 0.2])
+# CF.fit(train)
+# predictions = CF.predict(test)
+# #print(predictions.collect())

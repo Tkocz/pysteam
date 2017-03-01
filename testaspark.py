@@ -22,7 +22,6 @@ def flipBit(df, nUser):
 
 spark = SparkSession \
     .builder \
-    .master("local") \
     .appName("pysteam") \
     .getOrCreate()
 
