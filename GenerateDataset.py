@@ -1,11 +1,9 @@
 import json
 import pandas as pd
 from steamwebapi.api import IPlayerService, ISteamUserStats, ISteamWebAPIUtil
-import steamfront
 
 playerserviceinfo = IPlayerService()
 steamuserstats = ISteamUserStats()
-client = steamfront.Client()
 
 features = [
     'steamid',

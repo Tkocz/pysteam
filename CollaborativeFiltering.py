@@ -60,7 +60,7 @@ class CollaborativFiltering():
     def predict(self, users):
         """Predict similar games from user-owned games based on game genre tags"""
         predictions = self.model.transform(users)
-
+        predictions = predictions.sort(['steamid', 'prediction'], ascending=[True, False])
         return predictions
 
     def evalModel(self, X, numTrain):
@@ -144,9 +144,9 @@ class CollaborativFiltering():
     def flipBit(self, df, nUsers):
         ones = df[df.rating == 1.0].toPandas().values
         zeroes = df[df.rating == 0.0]
-        id = np.array(np.unique(ones[:, 0]), dtype=int)
-        index = np.random.choice(id, nUsers, replace=False)
-        ones[index, 2] = 0.0
+        indexes = np.array(np.unique(ones[:, 0], return_index=True)[1], dtype=int)
+        r_indexes = np.random.choice(indexes, nUsers, replace=False)
+        ones[r_indexes, 2] = 0.0
         newpdf = pd.DataFrame(ones, columns=["steamid", "appid", "rating"])
         newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
         newdf = self.spark.createDataFrame(newpdf)
@@ -156,24 +156,22 @@ class CollaborativFiltering():
 
     def takeSamples(self, df, nUsers):
         ones = df[df.rating == 1.0].toPandas().values
-        zeroes = df[df.rating == 0.0]
-        id = np.array(np.unique(ones[:, 0]), dtype=int)
-        index = np.random.choice(id, nUsers, replace=False)
-        ones[index, 2] = 0.0
-        newpdf = pd.DataFrame(ones, columns=["steamid", "appid", "rating"])
+        indexes = np.array(np.unique(ones[:, 0], return_index=True)[1], dtype=int)
+        r_indexes = np.random.choice(indexes, nUsers, replace=False)
+        newpdf = pd.DataFrame(ones[r_indexes], columns=["steamid", "appid", "rating"])
         newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
-        newdf = self.spark.createDataFrame(newpdf)
-        newdf = newdf.union(zeroes)
-        target = df.subtract(newdf)
-        return newdf, target
+        target = self.spark.createDataFrame(newpdf)
+        return target
 
-# test CF
-# CF = CollaborativFiltering()
-# dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
-# (training, validation) = dataset.randomSplit([0.9, 0.1])
-# CF.paramOpt(validation, 1, 1)
-# #CF.evalModel(training, 1)
-# (train, test) = training.randomSplit([0.8, 0.2])
-# CF.fit(train)
-# predictions = CF.predict(test)
-# #print(predictions.collect())
+#test CF
+#CF = CollaborativFiltering()
+#dataset = CF.spark.read.csv('Resources/formateddataset100.csv', header=True, inferSchema=True)
+#(training, validation) = dataset.randomSplit([0.9, 0.1])
+#CF.paramOpt(validation, 1, 1)
+#CF.evalModel(training, 1)
+#(train, test) = training.randomSplit([0.8, 0.2])
+#samples = CF.takeSamples(test, 10)
+#print(samples.collect())
+#CF.fit(train)
+#predictions = CF.predict(test)
+#print(predictions.collect())

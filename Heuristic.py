@@ -43,4 +43,4 @@ for i in matrix.index:
    print('\r{0}%'.format(round((i) / matrix.shape[0] * 100)), end="", flush=True)
 print(matrix)
 matrix = pd.DataFrame().from_records(steamlist)
-matrix.to_csv('Resources/formateddatasettest.csv', header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')
+matrix.to_csv('Resources/formateddataset100.csv', header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')
