@@ -1,28 +1,24 @@
-from urllib.request import urlopen
-import json
 import requests
-
 import pandas as pd
 from pandas.io.json import json_normalize
 from time import sleep
-from bs4 import BeautifulSoup
-
+from tqdm import *
 
 class CheckCSV():
-
+#37156
     def removeLegacy(self, path):
         #df = pd.read_csv(path)
 
         gamelist = pd.read_csv('Resources/allgames.csv')
         games = []
-        for i in gamelist['appid']:
-            sleep(6)
-            if self.checkapp(i):
-                games.append(i)
-            print('\r{0}%'.format(round(i / gamelist.shape[0] * 100)), end="", flush=True)
+        gamelist = gamelist['appid'].unique()
+        for appid in tqdm(gamelist):
+            sleep(1)
+            if self.checkapp(appid):
+                games.append(appid)
 
         validgames = pd.DataFrame(games)
-        validgames.to_csv('Resources/validgames.csv')
+        validgames.to_csv('Resources/validgamesall.csv')
         # newdf = df.copy()
         # games = df.appid.unique()
         # for i, app in enumerate(games):
@@ -34,10 +30,10 @@ class CheckCSV():
 
     def checkapp(self, app):
         data = requests.get('http://store.steampowered.com/api/appdetails?appids={0}&format=json'.format(app)).json()
-        if data[str(app)]["success"]:
-            type = data[str(app)]["data"]['type']
-            if(type != 'game'):
-                return False
+        # if data[str(app)]["success"]:
+        #     type = data[str(app)]["data"]['type']
+        #     if(type != 'game'):
+        #         return False
         return data[str(app)]["success"]
 
     def getAllGames(self):

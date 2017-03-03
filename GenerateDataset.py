@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 from steamwebapi.api import IPlayerService, ISteamUserStats, ISteamWebAPIUtil
+from tqdm import *
 
 playerserviceinfo = IPlayerService()
 steamuserstats = ISteamUserStats()
@@ -16,32 +17,31 @@ def achievementprocentage(ach):
     achieved = [i for i in ach if i['achieved'] == 1]
     return len(achieved) / len(ach)
 
+AMOUNT = 10000
 
 iddict = dict()
 
 # json_data = [76561198048730871, 76561198180821795, 76561198008911412]
-json_file = open('Resources/steamkey10000.json', 'r')
+json_file = open('Resources/steamkey{0}.json'.format(AMOUNT), 'r')
 json_data = json.loads(json_file.read())
 json_file.close()
 
-print(len(json_data))
-
 df = pd.DataFrame(None, columns=features)
 df.index.names = ['steamID/appID']
-id = -1;
-for index, steamid in enumerate(json_data):
+id = 0
+for steamid in tqdm(json_data):
     response = playerserviceinfo.get_owned_games(steamid)['response']
     if len(response) > 1:
         games = response['games']
-        id = id + 1
         iddict[id] = steamid
         for game in games:
             jointid = str(steamid) + "/" + str(game['appid'])
-            df.set_value(jointid, 'playtime_forever', int(game['playtime_forever']))
-            df.set_value(jointid, 'steamid', int(id))
-            df.set_value(jointid, 'appid', int(game['appid']))
-        print('\r{0}%'.format(round((index + 1) / len(json_data) * 100)), end="", flush=True)
-df.to_csv('Resources/dataset10000.csv', mode='w+')
+            df.set_value(jointid, 'playtime_forever', game['playtime_forever'])
+            df.set_value(jointid, 'steamid', id)
+            df.set_value(jointid, 'appid', game['appid'])
+        id += 1
+df = df.sort_values(by=['steamid', 'appid'], ascending=[True, False])
+df.to_csv('Resources/dataset{0}.csv'.format(AMOUNT), columns=df.columns)
 
             # try:
             #     currentGame = client.getApp(name=game['name'])

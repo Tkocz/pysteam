@@ -1,7 +1,7 @@
 from __future__ import print_function
 import pandas as pd
 import numpy as np
-
+from tqdm import *
 
 def evaluatetime(time):
 
@@ -21,26 +21,26 @@ def evaluatetime(time):
     # else:
     #     return 5
 
-dataset = pd.read_csv('Resources/dataset100.csv')
+AMOUNT = 1000
+
+dataset = pd.read_csv('Resources/dataset{0}.csv'.format(AMOUNT))
 
 games = np.unique(dataset['appid'])
 steamlist = []
 matrix = pd.DataFrame(columns=games)
 matrix.index.names = ["steamid"]
-for i, row in enumerate(dataset.values):
+for row in tqdm(dataset.values):
     matrix.set_value(int(row[1]), int(row[2]), 1)
-    #steamlist.append((row[1], row[2], 1))
-    print('\r{0}%'.format(round((i) / dataset.shape[0] * 100)), end="", flush=True)
+
+print('Wait..')
 matrix = matrix.fillna(value=0)
 sdf = matrix.to_sparse(fill_value=0)
-print(dataset)
 print('nUsers:', len(dataset.index), 'Sparsity:', 1 - sdf.density, 'Density:', sdf.density)
 
 steamlist = list()
-for i in matrix.index:
-   for j in matrix.columns:
-       steamlist.append((i, j, matrix.ix[i, j]))
-   print('\r{0}%'.format(round((i) / matrix.shape[0] * 100)), end="", flush=True)
-print(matrix)
+for i in tqdm(matrix.index):
+    for j in matrix.columns:
+        steamlist.append((i, j, matrix.ix[i, j]))
+
 matrix = pd.DataFrame().from_records(steamlist)
-matrix.to_csv('Resources/formateddataset100.csv', header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')
+matrix.to_csv('Resources/formateddataset{0}.csv'.format(AMOUNT), header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')

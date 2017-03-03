@@ -28,12 +28,17 @@ cbf_df = cbf.predict(cbftest, 20)
 cf.fit(train)
 cf_df = cf.predict(test)
 
+dataset.select(dataset.steamid == 2).show()
+
+
+
 #Show predictions
 #cbf_df.join(appnames.intersect(cbf_df), on=['appid'], how='left').show()
 #new = cf_df.subtract(users).show()
 #cbf_df.join(cf_df, on=['steamid', 'appid'], how='outer').show()
 cbf_df.join(appnames, on=['appid'], how='left').show()
 cf_df.join(appnames, on=['appid'], how='left').show()
+
 
 
 
