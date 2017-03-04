@@ -8,10 +8,10 @@ from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.recommendation import ALS
 from sklearn.metrics import auc, roc_curve
+from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 import pandas as pd
 import numpy as np
 import itertools
-
 
 class CollaborativFiltering():
     """Content-based Filtering based on content similarities with Top-N recommendations."""
@@ -23,7 +23,9 @@ class CollaborativFiltering():
             .builder \
             .appName("pysteam") \
             .getOrCreate()
-
+        self.als = ALS(implicitPrefs=True,
+                        userCol="steamid",
+                        itemCol="appid", ratingCol="rating")
         self.spark.sparkContext.setLogLevel('OFF')
         self.bestModel = None
         self.bestValidationRmse = None
@@ -54,7 +56,6 @@ class CollaborativFiltering():
                          userCol="steamid",
                          itemCol="appid",
                          ratingCol="rating").fit(X)
-
         return self.model
 
     def predict(self, users):
@@ -65,6 +66,7 @@ class CollaborativFiltering():
 
     def evalModel(self, X, numTrain):
         """Evaluate model from training"""
+
         pdf = pd.DataFrame()
         evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
         count = 0
@@ -77,7 +79,6 @@ class CollaborativFiltering():
                         alpha=self.bestAlpha,
                         userCol="steamid",
                         itemCol="appid", ratingCol="rating").fit(train)
-
             predictions = model.transform(test)
             ones = predictions.where("rating=1")
             zeroes = predictions.where("rating=0")
@@ -93,6 +94,30 @@ class CollaborativFiltering():
         pdf.columns = ['iteration', 'type', 'rmse', 'mse', 'mae']
         print(pdf)
         print(pdf.groupby(by=['type'], axis=0).mean())
+
+    def crossValidator(self, X, test):
+
+        paramMapExplicit = ParamGridBuilder() \
+            .addGrid(self.als.rank, np.arange(8, 20, 2)) \
+            .addGrid(self.als.maxIter, np.arange(8, 20, 2)) \
+            .addGrid(self.als.regParam, np.linspace(0.01, 0.5, 10)) \
+            .addGrid(self.als.alpha, np.arange(8, 40, 2)) \
+            .build()
+
+        crossval = CrossValidator(estimator=self.als,
+                                  estimatorParamMaps=paramMapExplicit,
+                                  evaluator=RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction"),
+                                  numFolds=1
+                                  )
+        cvModel = crossval.fit(X)
+
+        print(cvModel.bestModel.getrank())
+        print(cvModel.bestModel.maxIter())
+        print(cvModel.bestModel.regParam())
+        print(cvModel.bestModel.alpha())
+
+        cvModel.bestModel.transform(test).collect()
+
 
     def paramOpt(self, X, numVal, numParam):
         """Optimize parameters to find best model"""
@@ -164,10 +189,12 @@ class CollaborativFiltering():
         return target
 
 #test CF
-#CF = CollaborativFiltering()
-#dataset = CF.spark.read.csv('Resources/formateddataset100.csv', header=True, inferSchema=True)
-#(training, validation) = dataset.randomSplit([0.9, 0.1])
-#CF.paramOpt(validation, 1, 1)
+CF = CollaborativFiltering()
+dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
+(training, validation) = dataset.randomSplit([0.9, 0.1])
+(opttrain, oprtest) = validation.randomSplit([0.8, 0.2])
+CF.paramOpt(validation, 1, 1)
+CF.crossValidator(opttrain, oprtest)
 #CF.evalModel(training, 1)
 #(train, test) = training.randomSplit([0.8, 0.2])
 #samples = CF.takeSamples(test, 10)
