@@ -1,34 +1,43 @@
+from pyspark.sql.types import *
+
 import CollaborativeFiltering as CF
 import ContentBasedFiltering as CBF
 import pandas as pd
 cf = CF.CollaborativFiltering()
-cbf = CBF.ContentBasedFiltering()
+#cbf = CBF.ContentBasedFiltering()
 
 #recommenders = {'cf': cf, 'cbf': cbf}
 
-file_size = 1000
-dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv'.format(file_size), header=True, inferSchema=True)
-appnames = cf.spark.read.csv('Resources/allgames.csv', header=True, inferSchema=True)
-(training, validation) = dataset.randomSplit([0.9, 0.1])
-(train, test) = training.randomSplit([0.8, 0.2])
+schema = StructType([
+    StructField("steamid", IntegerType()),
+    StructField("appid", IntegerType()),
+    StructField("rating", DoubleType())
+])
 
-users = cf.takeSamples(test, 1)
-cbftest = test.subtract(users)
+FILE_SIZE = 1000
+
+dataset = cf.spark.read.csv('Resources/test2.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
+#appnames = cf.spark.read.csv('Resources/allgames.csv', header=True, inferSchema=True)
+#(training, validation) = dataset.randomSplit([0.9, 0.1])
+#(train, test) = training.randomSplit([0.8, 0.2])
+dataset.show()
+#users = cf.takeSamples(test, 1)
+#cbftest = test.subtract(users)
 
 #10 fold
 #foreach fold do everithing below
 
 #apps = dataset.toPandas()
-#cbf.generateGameGenreMatrix(apps, save=True, file_size=file_size)
-#cbf.generateSimMatrix(cbf.gm, save=True, file_size=file_size)
-cbf.readsimilaritymatrix(file_size)
-cbf_df = cbf.predict(cbftest, 20)
+#cbf.generateGameGenreMatrix(apps, save=True, file_size=FILE_SIZE)
+#cbf.generateSimMatrix(cbf.gm, save=True, file_size=FILE_SIZE)
+#cbf.readsimilaritymatrix(file_size)
+#cbf_df = cbf.predict(cbftest, 20)
 
 #cf.paramOpt(validation, 2, 10)
-cf.fit(train)
-cf_df = cf.predict(test)
+#cf.fit(train)
+#cf_df = cf.predict(test)
 
-dataset.select(dataset.steamid == 2).show()
+#dataset.select(dataset.steamid == 2).show()
 
 
 
@@ -36,8 +45,8 @@ dataset.select(dataset.steamid == 2).show()
 #cbf_df.join(appnames.intersect(cbf_df), on=['appid'], how='left').show()
 #new = cf_df.subtract(users).show()
 #cbf_df.join(cf_df, on=['steamid', 'appid'], how='outer').show()
-cbf_df.join(appnames, on=['appid'], how='left').show()
-cf_df.join(appnames, on=['appid'], how='left').show()
+#cbf_df.join(appnames, on=['appid'], how='left').show()
+#cf_df.join(appnames, on=['appid'], how='left').show()
 
 
 

@@ -72,7 +72,7 @@ class ContentBasedFiltering():
         print('\n')
         self.gm = gm
         if save is not None:
-            gm.to_csv('Resources/gamematrix{0}.csv'.format(file_size), mode='w+')
+            gm.to_csv('Resources/gamematrix{0}.csv.gz'.format(file_size), compression='gzip', mode='w+')
 
         return (gm)
 
@@ -92,7 +92,7 @@ class ContentBasedFiltering():
             print('\rGenerate sm: {0}%'.format(round(count / (appids.shape[0] ** 2) * 100)), end="", flush=True)
         self.sm = simMatrix
         if save:
-            simMatrix.to_csv('Resources/simmatrix{0}.csv'.format(file_size), mode='w+')
+            simMatrix.to_csv('Resources/simmatrix{0}.csv.gz'.format(file_size), compression='gzip',mode='w+')
 
         return (simMatrix)
 
@@ -132,10 +132,10 @@ class ContentBasedFiltering():
         """Read similarity and Game-genre matrix from csv file"""
 
         if self.sm is None:
-            sm = pd.read_csv('Resources/simmatrix{0}.csv'.format(file_size), index_col=['appid'], delimiter=',')
+            sm = pd.read_csv('Resources/simmatrix{0}.csv.gz'.format(file_size), compression='gzip', index_col=['appid'], delimiter=',')
             sm.columns = sm.columns.astype('Int64')
             self.sm = sm
-            gm = pd.read_csv('Resources/gamematrix{0}.csv'.format(file_size), index_col=['appid'], delimiter=',')
+            gm = pd.read_csv('Resources/gamematrix{0}.csv.gz'.format(file_size), compression='gzip', index_col=['appid'], delimiter=',')
             self.gm = gm
         else:
             return('model already created')

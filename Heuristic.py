@@ -21,7 +21,7 @@ def evaluatetime(time):
     # else:
     #     return 5
 
-AMOUNT = 1000
+AMOUNT = 100
 
 dataset = pd.read_csv('Resources/dataset{0}.csv'.format(AMOUNT))
 
@@ -38,9 +38,10 @@ sdf = matrix.to_sparse(fill_value=0)
 print('nUsers:', len(dataset.index), 'Sparsity:', 1 - sdf.density, 'Density:', sdf.density)
 
 steamlist = list()
+
 for i in tqdm(matrix.index):
     for j in matrix.columns:
         steamlist.append((i, j, matrix.ix[i, j]))
 
 matrix = pd.DataFrame().from_records(steamlist)
-matrix.to_csv('Resources/formateddataset{0}.csv'.format(AMOUNT), header=["steamid", "appid", "rating"], mode='w+', index=None, sep=',')
+matrix.to_csv('Resources/formateddataset{0}.csv.gz'.format(AMOUNT), mode='w+', compression='gzip', header=["steamid", "appid", "rating"], index=None, sep=',')

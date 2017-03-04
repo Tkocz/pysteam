@@ -98,10 +98,10 @@ class CollaborativFiltering():
     def crossValidator(self, X, test):
 
         paramMapExplicit = ParamGridBuilder() \
-            .addGrid(self.als.rank, np.arange(8, 20, 2)) \
-            .addGrid(self.als.maxIter, np.arange(8, 20, 2)) \
-            .addGrid(self.als.regParam, np.linspace(0.01, 0.5, 10)) \
-            .addGrid(self.als.alpha, np.arange(8, 40, 2)) \
+            .addGrid(self.als.rank, [8, 12]) \
+            .addGrid(self.als.maxIter, [8, 12]) \
+            .addGrid(self.als.regParam, [0.01, 0.1]) \
+            .addGrid(self.als.alpha, [10, 40]) \
             .build()
 
         crossval = CrossValidator(estimator=self.als,
@@ -110,11 +110,10 @@ class CollaborativFiltering():
                                   numFolds=1
                                   )
         cvModel = crossval.fit(X)
-
-        print(cvModel.bestModel.getrank())
+        print(cvModel.bestModel.rank)
         print(cvModel.bestModel.maxIter())
-        print(cvModel.bestModel.regParam())
-        print(cvModel.bestModel.alpha())
+        print(cvModel.bestModel.regParam)
+        print(cvModel.bestModel.alpha)
 
         cvModel.bestModel.transform(test).collect()
 
@@ -189,12 +188,12 @@ class CollaborativFiltering():
         return target
 
 #test CF
-CF = CollaborativFiltering()
-dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
-(training, validation) = dataset.randomSplit([0.9, 0.1])
-(opttrain, oprtest) = validation.randomSplit([0.8, 0.2])
-CF.paramOpt(validation, 1, 1)
-CF.crossValidator(opttrain, oprtest)
+#CF = CollaborativFiltering()
+#dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
+#(training, validation) = dataset.randomSplit([0.9, 0.1])
+#(opttrain, oprtest) = validation.randomSplit([0.8, 0.2])
+#CF.paramOpt(validation, 1, 1)
+#CF.crossValidator(opttrain, oprtest)
 #CF.evalModel(training, 1)
 #(train, test) = training.randomSplit([0.8, 0.2])
 #samples = CF.takeSamples(test, 10)
