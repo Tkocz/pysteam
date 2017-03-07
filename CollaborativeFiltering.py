@@ -21,12 +21,14 @@ class CollaborativFiltering():
     def __init__(self):
         self.spark = SparkSession \
             .builder \
+            .master("local") \
             .appName("pysteam") \
             .getOrCreate()
         self.als = ALS(implicitPrefs=True,
                         userCol="steamid",
                         itemCol="appid", ratingCol="rating")
         self.spark.sparkContext.setLogLevel('OFF')
+        self.spark.sparkContext._conf.set('spark.executor.memory','32g').set('spark.driver.memory','32g').set('spark.driver.maxResultsSize','0')
         self.bestModel = None
         self.bestValidationRmse = None
         self.bestRank = None
@@ -34,6 +36,7 @@ class CollaborativFiltering():
         self.bestNumIter = None
         self.bestAlpha = None
         self.model = None
+        self.spark.sparkContext.getConf()
 
     def fit(self, X, rank=None, nIter=None, lmbda=None, alpha=None):
         """Fit traning data to model."""
@@ -121,6 +124,8 @@ class CollaborativFiltering():
     def paramOpt(self, X, numVal, numParam):
         """Optimize parameters to find best model"""
 
+        bestParams = pd.DataFrame()
+
         ranks = np.arange(8, 20, 2)
         lambdas = np.linspace(0.01, 0.5, 10)
         numIters = np.arange(8, 20, 2)
@@ -162,8 +167,20 @@ class CollaborativFiltering():
                             bestRank, bestLambda, bestAlpha) \
                             + "numIter = %d and RMSE %f." % (bestNumIter, bestValidationRmse))
         self.bestRank, self.bestNumIter, self.bestLambda, self.bestAlpha = bestRank, bestNumIter, bestLambda, bestAlpha
+        bestParams = bestParams.append(pd.DataFrame([[numVal, numParam, bestRank, bestNumIter, bestLambda, bestAlpha, bestValidationRmse]]))
+        bestParams.columns = ['nValidationIter', 'nValidationParams', 'bestRank', 'bestnIter', 'bestLambda', 'bestAlpha', 'bestRmse']
+        bestParams.to_csv('Resources/params.csv.gz', compression='gzip', mode='w+', )
         self.bestModel = bestModel
+
         return bestModel
+
+    def setOptParams(self):
+        params = pd.read_csv('Resources/params.csv.gz', compression='gzip')
+
+        self.bestRank = params.bestRank
+        self.bestNumIter = params.bestnIter
+        self.bestLambda = params.bestLambda
+        self.bestAlpha = params.bestAlpha
 
     def flipBit(self, df, nUsers):
         ones = df[df.rating == 1.0].toPandas().values
@@ -185,11 +202,12 @@ class CollaborativFiltering():
         newpdf = pd.DataFrame(ones[r_indexes], columns=["steamid", "appid", "rating"])
         newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
         target = self.spark.createDataFrame(newpdf)
+        target = target.sort(['steamid'], ascending=True)
         return target
 
 #test CF
 #CF = CollaborativFiltering()
-#dataset = CF.spark.read.csv('Resources/formateddataset1000.csv', header=True, inferSchema=True)
+#dataset = CF.spark.read.csv('Resources/formateddataset1000.csv.gz', header=True, inferSchema=True)
 #(training, validation) = dataset.randomSplit([0.9, 0.1])
 #(opttrain, oprtest) = validation.randomSplit([0.8, 0.2])
 #CF.paramOpt(validation, 1, 1)

@@ -2,10 +2,9 @@ from __future__ import print_function
 import itertools
 from scipy.spatial.distance import cosine
 import pandas as pd
-import numpy as np
 import steamfront
 import requests
-client = steamfront.Client()
+from tqdm import *
 
 from pyspark.sql import SparkSession
 
@@ -18,6 +17,7 @@ class ContentBasedFiltering():
         self.Model = None
         self.gm = None
         self.sm = None
+        self.client = steamfront.Client()
 
         self.spark = SparkSession \
             .builder \
@@ -38,12 +38,12 @@ class ContentBasedFiltering():
 
         self.sm = sm
 
-    def _getApps(self, appid):
+    def getApps(self, appid):
         """Get app genres from api"""
 
         currentGenres = []
         try:
-            currentGame = client.getApp(appid=appid)
+            currentGame = self.client.getApp(appid=appid)
             currentGenres = (list(currentGame.genres))
             currentGenres.extend(list(currentGame.categories))
         except:
@@ -54,7 +54,7 @@ class ContentBasedFiltering():
         """Generate game-genre matrix (app * genre)"""
 
         if appids is None:
-            steamAppList = 'http://api.steampowered.com/ISteamApps/GetAppList/v0001/'
+            steamAppList = 'http://api.steampowered.com/ISteamApps/GetAppList/v2/'
             dictGames = requests.get(steamAppList)
             jsonGames = dictGames.json()
             gameList = [i['appid'] for i in jsonGames['applist']['apps']['app']]
@@ -63,11 +63,11 @@ class ContentBasedFiltering():
         appids = appids['appid'].unique()
         gm = pd.DataFrame()
         gm.index.names = ["appid"]
-        for i, id in enumerate(appids):
-            for genre in self._getApps(id):
+        for id in tqdm(appids):
+            for genre in self.getApps(id):
                 if genre is not None:
                     gm.set_value(id, genre, int(1))
-            print('\rGenerate gm:{0}%'.format(round(i / appids.size * 100)), end="", flush=True)
+            #print('\rGenerate gm:{0}%'.format(round(i / appids.size * 100)), end="", flush=True)
         gm = gm.fillna(value=0)
         print('\n')
         self.gm = gm
@@ -85,14 +85,11 @@ class ContentBasedFiltering():
         appids = tdataset.columns
         simMatrix = pd.DataFrame()
         simMatrix.index.names = ["appid"]
-        count = 0
-        for id1, id2 in itertools.product(appids, appids):
+        for id1, id2 in tqdm(itertools.product(appids, appids)):
             simMatrix.set_value(id1, id2, 1 - cosine(tdataset[id1], tdataset[id2]))
-            count += 1
-            print('\rGenerate sm: {0}%'.format(round(count / (appids.shape[0] ** 2) * 100)), end="", flush=True)
         self.sm = simMatrix
         if save:
-            simMatrix.to_csv('Resources/simmatrix{0}.csv.gz'.format(file_size), compression='gzip',mode='w+')
+            simMatrix.to_csv('Resources/simmatrix{0}.csv.gz'.format(file_size), compression='gzip', mode='w+')
 
         return (simMatrix)
 
@@ -104,7 +101,6 @@ class ContentBasedFiltering():
         users = ones.steamid.unique()
         for i in users:
             #focus user
-
             user = ones[(ones.steamid == i)]
             #drop NA-apps
             user = user[user.appid.isin(self.sm.index)]
@@ -115,7 +111,10 @@ class ContentBasedFiltering():
             #create new column with max similarities from row
             result['prediction'] = result.max(axis=1)
             #sort all columns in decending order and take Top-N apps
-            appids = result.sort_values(['prediction'], ascending=False).head(nRec)
+            if nRec > 0:
+                appids = result.sort_values(['prediction'], ascending=False).head(nRec)
+            else:
+                appids = result.sort_values(['prediction'], ascending=False)
             #arrange (steamid, appid, rating, predictions)
             newpred = appids.prediction
             newpred = newpred.reset_index()
@@ -159,8 +158,11 @@ class ContentBasedFiltering():
 #             .builder \
 #             .appName("pysteam") \
 #             .getOrCreate()
-# cbf = ContentBasedFiltering()
-# #cbf.readsimilaritymatrix()
+
+#cbf.readsimilaritymatrix(100)
+#apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
+#cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
+#cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 # sm = cbf.spark.read.csv('Resources/test.csv', header=True, inferSchema=True)
 # print(sm.collect())
 # print(sm[sm.steamid == 0])

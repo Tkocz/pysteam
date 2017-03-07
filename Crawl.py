@@ -1,7 +1,6 @@
 from __future__ import print_function
 from steamwebapi.api import ISteamUser, IPlayerService, ISteamUserStats
 import json
-from tqdm import *
 
 steamID = [76561198048730871, 76561198180821795, 76561198008911412]
 steamuserinfo = ISteamUser()

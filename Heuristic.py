@@ -2,6 +2,8 @@ from __future__ import print_function
 import pandas as pd
 import numpy as np
 from tqdm import *
+import CheckCSV
+cc = CheckCSV()
 
 def evaluatetime(time):
 
@@ -21,27 +23,32 @@ def evaluatetime(time):
     # else:
     #     return 5
 
-AMOUNT = 100
+AMOUNT = 1000
 
-dataset = pd.read_csv('Resources/dataset{0}.csv'.format(AMOUNT))
+dataset = pd.read_csv('Resources/dataset100.csv.gz'.format(AMOUNT), compression='gzip')
 
 games = np.unique(dataset['appid'])
 steamlist = []
 matrix = pd.DataFrame(columns=games)
 matrix.index.names = ["steamid"]
+
 for row in tqdm(dataset.values):
     matrix.set_value(int(row[1]), int(row[2]), 1)
-
+print(matrix)
 print('Wait..')
 matrix = matrix.fillna(value=0)
 sdf = matrix.to_sparse(fill_value=0)
 print('nUsers:', len(dataset.index), 'Sparsity:', 1 - sdf.density, 'Density:', sdf.density)
 
+testlist = list(zip(matrix.index, matrix.columns))
+
 steamlist = list()
 
 for i in tqdm(matrix.index):
-    for j in matrix.columns:
-        steamlist.append((i, j, matrix.ix[i, j]))
+     for j in matrix.columns:
+         steamlist.append((i, j, matrix.ix[i, j]))
+print(steamlist)
+print(testlist)
 
 matrix = pd.DataFrame().from_records(steamlist)
 matrix.to_csv('Resources/formateddataset{0}.csv.gz'.format(AMOUNT), mode='w+', compression='gzip', header=["steamid", "appid", "rating"], index=None, sep=',')
