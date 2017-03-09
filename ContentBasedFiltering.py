@@ -1,6 +1,7 @@
 from __future__ import print_function
 import itertools
 from scipy.spatial.distance import cosine
+from pyspark.sql.functions import broadcast
 import pandas as pd
 import steamfront
 import requests
@@ -23,11 +24,12 @@ class ContentBasedFiltering():
             .builder \
             .appName("pysteam") \
             .getOrCreate()
+        self.apps = pd.read_csv('Resources/Genres.csv')
 
     def fit(self, X=None, nGames = None):
         """Fit traning data to model."""
-
-        X = X.toPandas()
+        bX = broadcast(X)
+        X = bX.toPandas()
         self.generateGameGenreMatrix(X, nGames)
         self.train()
 
@@ -41,13 +43,12 @@ class ContentBasedFiltering():
     def getApps(self, appid):
         """Get app genres from api"""
 
-        currentGenres = []
-        try:
-            currentGame = self.client.getApp(appid=appid)
-            currentGenres = (list(currentGame.genres))
-            currentGenres.extend(list(currentGame.categories))
-        except:
-            pass
+
+        tags = self.apps[(self.apps.appid == appid)]
+        currentGenres = tags['tag'].tolist()
+            # currentGame = self.client.getApp(appid=appid)
+            # currentGenres = (list(currentGame.genres))
+            # currentGenres.extend(list(currentGame.categories))
         return currentGenres
 
     def generateGameGenreMatrix(self, appids=None, nGames=10, save=None, file_size=''):
@@ -85,15 +86,18 @@ class ContentBasedFiltering():
         appids = tdataset.columns
         simMatrix = pd.DataFrame()
         simMatrix.index.names = ["appid"]
-        for id1, id2 in tqdm(itertools.product(appids, appids)):
+        pbar = tqdm(total=len(appids)**2)
+        for id1, id2 in itertools.product(appids, appids):
             simMatrix.set_value(id1, id2, 1 - cosine(tdataset[id1], tdataset[id2]))
+            pbar.update(1)
+        pbar.close()
         self.sm = simMatrix
         if save:
             simMatrix.to_csv('Resources/simmatrix{0}.csv.gz'.format(file_size), compression='gzip', mode='w+')
 
         return (simMatrix)
 
-    def predict(self, df, nRec=10):
+    def predict(self, df, nRec=None):
         """Predict similar games from user-owned games based on game genre tags"""
 
         ones = df[df.rating == 1.0].toPandas()
@@ -111,21 +115,21 @@ class ContentBasedFiltering():
             #create new column with max similarities from row
             result['prediction'] = result.max(axis=1)
             #sort all columns in decending order and take Top-N apps
+            appids = result.sort_values(['prediction'], ascending=False)
             if nRec > 0:
-                appids = result.sort_values(['prediction'], ascending=False).head(nRec)
-            else:
-                appids = result.sort_values(['prediction'], ascending=False)
+                appids = appids.head(nRec)
             #arrange (steamid, appid, rating, predictions)
             newpred = appids.prediction
             newpred = newpred.reset_index()
-            newpred.insert(0,'steamid',i)
+            newpred.insert(0, 'steamid', i)
             newpred.insert(2, 'rating', 0)
             #append result
             preds = preds.append(newpred)
         #formate to spark df
         predictions = self.spark.createDataFrame(preds)
-        predictions = predictions.sort(['steamid', 'prediction'], ascending=[True, False])
-        return predictions
+        bPredictions = broadcast(predictions)
+        bPredictions = bPredictions.sort(['steamid', 'prediction'], ascending=[True, False])
+        return bPredictions
 
     def readsimilaritymatrix(self, file_size):
         """Read similarity and Game-genre matrix from csv file"""
@@ -153,15 +157,16 @@ class ContentBasedFiltering():
 
 #test CBF
 # from pyspark.sql import SparkSession
-#
 # spark = SparkSession \
 #             .builder \
 #             .appName("pysteam") \
 #             .getOrCreate()
-
+cbf = ContentBasedFiltering()
 #cbf.readsimilaritymatrix(100)
-#apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
-#cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
+apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
+cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
+cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
+
 #cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 # sm = cbf.spark.read.csv('Resources/test.csv', header=True, inferSchema=True)
 # print(sm.collect())

@@ -6,7 +6,7 @@ steamID = [76561198048730871, 76561198180821795, 76561198008911412]
 steamuserinfo = ISteamUser()
 playerserviceinfo = IPlayerService()
 
-AMOUNT = 100
+AMOUNT = 10000
 
 count = 0
 while len(steamID) < AMOUNT:

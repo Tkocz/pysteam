@@ -17,7 +17,7 @@ def achievementprocentage(ach):
     achieved = [i for i in ach if i['achieved'] == 1]
     return len(achieved) / len(ach)
 
-AMOUNT = 10000
+AMOUNT = 1000
 
 iddict = dict()
 

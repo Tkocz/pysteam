@@ -4,6 +4,7 @@ import sys
 if sys.version >= '3':
     long = int
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import broadcast
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.recommendation import ALS
@@ -45,12 +46,11 @@ class CollaborativFiltering():
         nIter = 10 if nIter is None else self.bestNumIter
         lmbda = 0.01 if lmbda is None else self.bestLambda
         alpha = 40.0 if alpha is None else self.bestAlpha
-
         self.train(X, rank, nIter, lmbda, alpha)
 
     def train(self, X, rank, nIter, lmbda, alpha):
         """Train model with traning data and generate a similarity matrix."""
-
+        bX = broadcast(X)
         self.model = ALS(implicitPrefs=True,
                          rank=rank,
                          maxIter=nIter,
@@ -58,7 +58,7 @@ class CollaborativFiltering():
                          alpha=alpha,
                          userCol="steamid",
                          itemCol="appid",
-                         ratingCol="rating").fit(X)
+                         ratingCol="rating").fit(bX)
         return self.model
 
     def predict(self, users):
@@ -69,12 +69,12 @@ class CollaborativFiltering():
 
     def evalModel(self, X, numTrain):
         """Evaluate model from training"""
-
+        bX = broadcast(X)
         pdf = pd.DataFrame()
         evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
         count = 0
         for i in range(numTrain):
-            (train, test) = X.randomSplit([0.8, 0.2])
+            (train, test) = bX.randomSplit([0.8, 0.2])
             model = ALS(implicitPrefs=True,
                         rank=self.bestRank,
                         maxIter=self.bestNumIter,
