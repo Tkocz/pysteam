@@ -161,11 +161,11 @@ class ContentBasedFiltering():
 #             .builder \
 #             .appName("pysteam") \
 #             .getOrCreate()
-cbf = ContentBasedFiltering()
+#cbf = ContentBasedFiltering()
 #cbf.readsimilaritymatrix(100)
-apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
-cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
-cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
+#apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
+#cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
+#cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 
 #cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 # sm = cbf.spark.read.csv('Resources/test.csv', header=True, inferSchema=True)

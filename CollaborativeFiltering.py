@@ -14,6 +14,8 @@ import pandas as pd
 import numpy as np
 import itertools
 
+#http://127.0.0.1:4041/jobs/
+
 class CollaborativFiltering():
     """Content-based Filtering based on content similarities with Top-N recommendations."""
 

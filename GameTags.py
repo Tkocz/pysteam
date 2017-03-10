@@ -12,6 +12,8 @@ class GameTags():
 
 
     def getGameTags(self, appids):
+        """Get tags of games thats available in steam store"""
+
         mb = self.mb
         mb.open("http://store.steampowered.com/agecheck/app/{0}/".format(10))
         mb.select_form(nr=1)
@@ -34,6 +36,8 @@ class GameTags():
         tag_df.to_csv('Resources/gamegenres.csv.gz', compression='gzip')
         return(tag_df)
     def converting(self):
+        """Convert genres from unicode to string format"""
+
         data = pd.read_csv('Resources/gamegenres.csv.gz', compression='gzip')
 
         tags = []

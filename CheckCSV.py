@@ -1,7 +1,5 @@
 import requests
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from pandas.io.json import json_normalize
 from time import sleep
 from tqdm import *
@@ -9,6 +7,8 @@ from tqdm import *
 class CheckCSV():
 
     def removeLegacy(self, path=None):
+        """Remove obsolete games from choosen dataset"""
+
         df = pd.read_csv(path, compression='gzip')
         print(df.shape)
         gamelist = pd.read_csv('Resources/validgames.csv', index_col=[0])
@@ -18,8 +18,11 @@ class CheckCSV():
         print(filter_df.shape)
         filter_df.to_csv(path, compression='gzip', columns=['steamid', 'appid', 'rating'], mode='w+', index=None)
 
+    def trimInsignificance(self, path):
+
 
     def checkapp(self, app):
+        """Check if game is applies for Content-based filtering"""
 
         data = requests.get('http://store.steampowered.com/api/appdetails?appids={0}&format=json'.format(app)).json()
 
@@ -30,6 +33,7 @@ class CheckCSV():
         return data[str(app)]["success"]
 
     def getAllValidGames(self):
+        """Check all games not sutied for Content-based filtering"""
 
         gamelist = pd.read_csv('Resources/allgames.csv.gz', compression='gzip')
         games = []
@@ -54,28 +58,16 @@ class CheckCSV():
         validgames.to_csv('Resources/validgames.csv')
 
     def check_size(self, path):
+
         dataset = pd.read_csv(path)
         dataset['steamid'].unique().size()
 
     def getValidGamesList(self):
+        """Get list of all games available on steam as of knowledge"""
+
         data = requests.get('http://api.steampowered.com/ISteamApps/GetAppList/v2/').json()
         df = json_normalize(data['applist'], 'apps')
         df.to_csv('Resources/allgames.csv.gz', compression='gzip', index=False)
 
-
-data = pd.read_csv('Resources/formateddataset100.csv.gz', compression='gzip')
-#size = data.groupby(by=['steamid', 'rating'])
-#size = pd.DataFrame({'count': data.groupby(by=['steamid', 'rating']).count()}).reset_index()
-#print(size)
-apps = data[(data['rating'])].groupby(by=['steamid']).count()
-print(apps)
-
-#ax2 = data.groupby(by=['rating']).count().hist(bins=20, normed=True)
-#ax1 = data['steamid'].hist(by=data['rating'], bins=20, normed=True) #Figure1
-plt.show()
-#test = data.groupby(by=['steamid', 'rating'], axis=0).count()
-#hist = data['rating'].hist(by=data['steamid'])
-#print(test)
-#print(hist)
 #csv = CheckCSV()
 #csv.removeLegacy('Resources/formateddataset10000.csv.gz')
