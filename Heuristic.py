@@ -21,7 +21,7 @@ def evaluatetime(time):
     # else:
     #     return 5
 
-AMOUNT = 100
+AMOUNT = 1000
 
 dataset = pd.read_csv('Resources/dataset{0}.csv.gz'.format(AMOUNT), compression='gzip')
 

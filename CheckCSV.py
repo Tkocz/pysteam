@@ -18,8 +18,8 @@ class CheckCSV():
         print(filter_df.shape)
         filter_df.to_csv(path, compression='gzip', columns=['steamid', 'appid', 'rating'], mode='w+', index=None)
 
-    def trimInsignificance(self, path):
-
+    def removeMinGames(self):
+        pass
 
     def checkapp(self, app):
         """Check if game is applies for Content-based filtering"""
@@ -69,5 +69,5 @@ class CheckCSV():
         df = json_normalize(data['applist'], 'apps')
         df.to_csv('Resources/allgames.csv.gz', compression='gzip', index=False)
 
-#csv = CheckCSV()
-#csv.removeLegacy('Resources/formateddataset10000.csv.gz')
+csv = CheckCSV()
+csv.removeLegacy('Resources/formateddatasetMJL.csv.gz')

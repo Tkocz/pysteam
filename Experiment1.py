@@ -1,11 +1,13 @@
 import datetime
 
+from pyspark.sql import Window
 from pyspark.sql.types import *
 import CollaborativeFiltering as CF
 import ContentBasedFiltering as CBF
 from pyspark.sql.functions import broadcast
 import pandas as pd
 from tqdm import *
+import numpy as np
 cf = CF.CollaborativFiltering()
 cbf = CBF.ContentBasedFiltering()
 
@@ -19,7 +21,7 @@ schema = StructType([
 
 # set envparam PYSPARK_PYTHON = python3
 
-FILE_SIZE = 1000
+FILE_SIZE = 100
 ITER = 2
 NFOLDS = 10
 
@@ -31,8 +33,6 @@ cf.setOptParams()
 #apps = dataset.toPandas()
 #cbf.generateGameGenreMatrix(apps, save=True, file_size=FILE_SIZE)
 #cbf.generateSimMatrix(cbf.gm, save=True, file_size=FILE_SIZE)
-print('Read Data - Done!')
-
 
 """ParamOpt"""
 #(training, validation) = dataset.randomSplit([0.9, 0.1])
@@ -52,31 +52,36 @@ for i in tqdm(range(ITER)):
         busers = broadcast(users)
         #users.show()
         cbftest = bSplit.subtract(users)
-        cbf_df = cbf.predict(cbftest, 0)
+        bcbftest = broadcast(cbftest)
+        preds = cbf.predict(bcbftest.toPandas(), 0)
+        cbf_df = cf.spark.createDataFrame(preds)
         bCbf_df = broadcast(cbf_df)
         train = dataset.subtract(bSplit)
         cf.fit(train)
         cf_df = cf.predict(bSplit)
         bCf_df = broadcast(cf_df)
-        for user in busers.collect():
-            prediction = -1
-            cf_sel = bCf_df.where((bCf_df.steamid == user.steamid) & (bCf_df.appid == user.appid)).collect()[0]
-            cf_count = bCf_df.where((bCf_df.steamid == cf_sel.steamid) & (bCf_df.rating != 1) & (bCf_df.prediction > cf_sel.prediction)).count()
-            #cbf_sel = bCbf_df.where((bCbf_df.steamid == user.steamid) & (bCbf_df.appid == user.appid)).collect()
-            #if len(cbf_sel) > 0:
-                #cbf_count = bCbf_df.where(
-                    #(bCbf_df.steamid == cbf_sel[0].steamid) & (bCbf_df.prediction > cbf_sel[0].prediction)).count()
-                #prediction = cbf_sel[0].prediction
-            #else:
-                #cbf_count = bCbf_df.where(bCbf_df.steamid == user.steamid).count()
-            result = result.append(
-                pd.DataFrame([[int(i + 1), int(fold + 1), int(0), int(user.steamid), int(user.appid), int(user.rating), float(cf_sel.prediction), int(cf_count + 1)]]))
-            #result = result.append(
-                #pd.DataFrame([[int(i + 1), int(fold + 1), int(1), int(user.steamid), int(user.appid), int(user.rating), float(prediction), int(cbf_count + 1)]]))
 
+        for user in busers.collect():
+            prediction = -1.0
+            cf_sel = bCf_df.where((bCf_df.steamid == user.steamid) & (bCf_df.appid == user.appid))#.collect()[0]
+            cf_count = bCf_df.where((bCf_df.steamid == cf_sel.first().steamid) & (bCf_df.rating != 1) & (bCf_df.prediction > cf_sel.first().prediction)).count()
+            cbf_sel = bCbf_df.where((bCbf_df.steamid == user.steamid) & (bCbf_df.appid == user.appid))#.collect()
+            if cbf_sel.first() is not None:
+                cbf_count = bCbf_df.where(
+                    (bCbf_df.steamid == cbf_sel.first().steamid) & (bCbf_df.prediction > cbf_sel.first().prediction)).count()
+                prediction = cbf_sel.first().prediction
+            else:
+                cbf_count = bCbf_df.where(bCbf_df.steamid == user.steamid).count()
+            result = result.append(
+                pd.DataFrame([[int(i + 1), int(fold + 1), 'CF', int(user.steamid), int(user.appid), int(user.rating), float(cf_sel.first().prediction), int(cf_count + 1)]]))
+            result = result.append(
+                pd.DataFrame([[int(i + 1), int(fold + 1), 'CBF', int(user.steamid), int(user.appid), int(user.rating), float(prediction), int(cbf_count + 1)]]))
+            result.columns = ['iter', 'fold', 'type', 'steamid', 'appid', 'rating', 'prediction', 'rank']
+            print(result)
+        break
 result.columns = ['iter', 'fold', 'type', 'steamid', 'appid', 'rating', 'prediction', 'rank']
 print(result)
-result.to_csv('ExperimentData/E1-{0}-{1}-{2}.csv.gz'.format(FILE_SIZE, ITER, NFOLDS ), compression='gzip')
+result.to_csv('ExperimentData/E1-{0}-{1}-{2}r2.csv.gz'.format(FILE_SIZE, ITER, NFOLDS ), compression='gzip')
 
 #user = dataset[dataset.steamid == 11]
 #cbf.predict(user, 20).join(appnames, on=['appid'], how='left').show()

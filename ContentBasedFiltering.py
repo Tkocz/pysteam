@@ -19,11 +19,6 @@ class ContentBasedFiltering():
         self.gm = None
         self.sm = None
         self.client = steamfront.Client()
-
-        self.spark = SparkSession \
-            .builder \
-            .appName("pysteam") \
-            .getOrCreate()
         self.apps = pd.read_csv('Resources/Genres.csv')
 
     def fit(self, X=None, nGames = None):
@@ -100,7 +95,7 @@ class ContentBasedFiltering():
     def predict(self, df, nRec=None):
         """Predict similar games from user-owned games based on game genre tags"""
 
-        ones = df[df.rating == 1.0].toPandas()
+        ones = df[df.rating == 1.0]
         preds = pd.DataFrame()
         users = ones.steamid.unique()
         for i in users:
@@ -116,20 +111,18 @@ class ContentBasedFiltering():
             result['prediction'] = result.max(axis=1)
             #sort all columns in decending order and take Top-N apps
             appids = result.sort_values(['prediction'], ascending=False)
-            if nRec > 0:
+            if nRec is not None:
                 appids = appids.head(nRec)
             #arrange (steamid, appid, rating, predictions)
             newpred = appids.prediction
             newpred = newpred.reset_index()
             newpred.insert(0, 'steamid', i)
-            newpred.insert(2, 'rating', 0)
+            newpred.insert(2, 'rating', 0.0)
             #append result
             preds = preds.append(newpred)
         #formate to spark df
-        predictions = self.spark.createDataFrame(preds)
-        bPredictions = broadcast(predictions)
-        bPredictions = bPredictions.sort(['steamid', 'prediction'], ascending=[True, False])
-        return bPredictions
+        preds.sort_values(['steamid', 'prediction'], ascending=[True, False])
+        return preds
 
     def readsimilaritymatrix(self, file_size):
         """Read similarity and Game-genre matrix from csv file"""
