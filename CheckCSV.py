@@ -4,7 +4,7 @@ from pandas.io.json import json_normalize
 from time import sleep
 from tqdm import *
 
-class CheckCSV():
+class CheckCSV:
 
     def removeLegacy(self, path=None):
         """Remove obsolete games from choosen dataset"""
@@ -18,8 +18,18 @@ class CheckCSV():
         print(filter_df.shape)
         filter_df.to_csv(path, compression='gzip', columns=['steamid', 'appid', 'rating'], mode='w+', index=None)
 
-    def removeMinGames(self):
-        pass
+    @staticmethod
+    def remove_min_games(df, minGames=0):
+        data = df.copy()
+        users = data[(data.rating == 1.0)].groupby(by=['steamid']).rating.count().reset_index()
+        users = users[((users.rating >= minGames))]
+        datafilt = data.where((data.steamid.isin(users.steamid))).dropna()
+        #print(df.steamid.nunique(), df.appid.nunique())
+        #print(datafilt.steamid.nunique(), datafilt.appid.nunique())
+        #with pd.option_context('display.max_rows', df.shape[0], 'display.max_columns', 6):
+            #print(pd.concat([df, datafilt], axis=1))
+        datafilt[['steamid', 'appid']] = datafilt[['steamid', 'appid']].astype(int)
+        return datafilt
 
     def checkapp(self, app):
         """Check if game is applies for Content-based filtering"""
@@ -70,4 +80,6 @@ class CheckCSV():
         df.to_csv('Resources/allgames.csv.gz', compression='gzip', index=False)
 
 csv = CheckCSV()
-csv.removeLegacy('Resources/formateddatasetMJL.csv.gz')
+#csv.removeLegacy('Resources/formateddatasetMJL.csv.gz')
+#df = pd.read_csv('Resources/formateddatasetMJL.csv.gz', compression='gzip')
+#csv.removeMinGames(df, minGames=5)

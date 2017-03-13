@@ -52,7 +52,7 @@ class CollaborativFiltering():
 
     def train(self, X, rank, nIter, lmbda, alpha):
         """Train model with traning data and generate a similarity matrix."""
-        bX = broadcast(X)
+
         self.model = ALS(implicitPrefs=True,
                          rank=rank,
                          maxIter=nIter,
@@ -60,7 +60,7 @@ class CollaborativFiltering():
                          alpha=alpha,
                          userCol="steamid",
                          itemCol="appid",
-                         ratingCol="rating").fit(bX)
+                         ratingCol="rating").fit(X)
         return self.model
 
     def predict(self, users):
@@ -71,12 +71,12 @@ class CollaborativFiltering():
 
     def evalModel(self, X, numTrain):
         """Evaluate model from training"""
-        bX = broadcast(X)
+
         pdf = pd.DataFrame()
         evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
         count = 0
         for i in range(numTrain):
-            (train, test) = bX.randomSplit([0.8, 0.2])
+            (train, test) = X.randomSplit([0.8, 0.2])
             model = ALS(implicitPrefs=True,
                         rank=self.bestRank,
                         maxIter=self.bestNumIter,

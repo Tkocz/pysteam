@@ -99,12 +99,13 @@ class ContentBasedFiltering():
         preds = pd.DataFrame()
         users = ones.steamid.unique()
         for i in users:
+            sm = self.sm
             #focus user
             user = ones[(ones.steamid == i)]
             #drop NA-apps
-            user = user[user.appid.isin(self.sm.index)]
+            user = user[user.appid.isin(sm.index)]
             #drop user-owned games from axis 0
-            result = self.sm.drop(user.appid, axis=0)
+            result = sm.drop(user.appid, axis=0)
             #focus axis 1 on owned games
             result = result[user.appid]
             #create new column with max similarities from row
@@ -154,24 +155,28 @@ class ContentBasedFiltering():
 #             .builder \
 #             .appName("pysteam") \
 #             .getOrCreate()
-#cbf = ContentBasedFiltering()
-#cbf.readsimilaritymatrix(100)
-#apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
-#cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
-#cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
-
-#cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
-# sm = cbf.spark.read.csv('Resources/test.csv', header=True, inferSchema=True)
-# print(sm.collect())
-# print(sm[sm.steamid == 0])
-# cbf.fit(sm)
-# print(cbf.sm)
-# prediction = cbf.predict(sm[sm.steamid == 0], 7)
+# cbf = ContentBasedFiltering()
+# cbf.readsimilaritymatrix(100)
+# #apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
+# #cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
+# #cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 #
+# #227940
+# sm = pd.read_csv('Resources/formateddataset100.csv.gz', compression='gzip')
+# user = sm[((sm.steamid == 87) & (sm.rating == 1) & (sm.appid != 227940))]
+# print(user)
+# # print(sm.collect())
+# # print(sm[sm.steamid == 0])
+# # cbf.fit(sm)
+# # print(cbf.sm)
+# data = pd.DataFrame([(0, 437900, 1)], columns=['steamid', 'appid', 'rating'])
+# #prediction = cbf.predict(data)
+# #
+# #print(prediction[prediction.appid == 227940])
 # print(prediction)
-# sm = sm.toPandas()
-# matrix = cbf.generateGameGenreMatrix(sm['appid'])
-# simmatrix = cbf.generateSimMatrix(matrix)
-#
-# print(matrix)
-# print(simmatrix)
+# # sm = sm.toPandas()
+# # matrix = cbf.generateGameGenreMatrix(sm['appid'])
+# # simmatrix = cbf.generateSimMatrix(matrix)
+# #
+# # print(matrix)
+# # print(simmatrix)
