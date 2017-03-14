@@ -19,7 +19,7 @@ class Statistics:
         #axe.plot()
         plt.show()
 
-    def evaluateUser(self, path, minGames=float('-inf'), maxGames=float('inf')):
+    def evaluateUser(self, path, minGames=0, maxGames=float('inf')):
         """Evaluate distribution of games and users"""
 
         data = pd.read_csv(path, compression='gzip')
@@ -28,6 +28,8 @@ class Statistics:
         datafilt = data.where((data.steamid.isin(apps.steamid)) & (data.rating == 1.0)).dropna()
         nGames = datafilt.appid.nunique()
         nUsers = apps.steamid.nunique()
+        if maxGames == float('inf'):
+            maxGames = apps.rating.max()
         apps.rating.hist(bins=maxGames - minGames)
         plt.title("Game Distribution Histogram")
         plt.xlabel("Games")
@@ -39,6 +41,6 @@ class Statistics:
 
 stat = Statistics()
 
-stat.evaluateUser('Resources/formateddataset10000.csv.gz', minGames=0, maxGames=500)
+stat.evaluateUser('Resources/formateddataset10000.csv.gz', minGames=0, maxGames=1000)
 
-stat.evaluateExperiment('ExperimentData/E1-100-2-10-20170311.csv.gz')
+#stat.evaluateExperiment('ExperimentData/E1-100-2-10-5-201703130903.csv.gz')

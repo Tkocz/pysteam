@@ -43,7 +43,8 @@ folds = [(1.0 / NFOLDS)] * NFOLDS
 kf = KFold(n_splits=10)
 for i in tqdm(range(ITER)):
 
-    data = kf.split(pdataset.shape[0])
+    #data = kf.split(pdataset.shape[0])
+    dataset.repartition(10, 'steamid').show()
     splits = dataset.randomSplit(folds)
 
     for fold, test in enumerate(tqdm(splits)):
