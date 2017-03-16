@@ -21,13 +21,15 @@ schema = StructType([
 
 # set envparam PYSPARK_PYTHON = python3
 
-FILE_SIZE = 100
+FILE_SIZE = 10000
 ITER = 2
 NFOLDS = 10
 MIN_GAMES = 5
 
 data = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
-pdataset = CheckCSV.remove_min_games(data.toPandas(), minGames=MIN_GAMES)
+data = broadcast(data)
+pandasset = data.toPandas()
+pdataset = CheckCSV.remove_min_games(pandasset, minGames=MIN_GAMES)
 dataset = cf.spark.createDataFrame(pdataset)
 appnames = cf.spark.read.csv('Resources/allgames.csv.gz', header=True, inferSchema=True)
 cbf.readsimilaritymatrix(FILE_SIZE)
@@ -43,8 +45,6 @@ folds = [(1.0 / NFOLDS)] * NFOLDS
 kf = KFold(n_splits=10)
 for i in tqdm(range(ITER)):
 
-    #data = kf.split(pdataset.shape[0])
-    dataset.repartition(10, 'steamid').show()
     splits = dataset.randomSplit(folds)
 
     for fold, test in enumerate(tqdm(splits)):
