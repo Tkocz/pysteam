@@ -7,7 +7,7 @@ from tqdm import *
 class CheckCSV:
 
     def removeLegacy(self, path=None):
-        """Remove obsolete games from choosen dataset"""
+        """Remove obsolete games from chosen dataset"""
 
         df = pd.read_csv(path, compression='gzip')
         print(df.shape)
@@ -79,7 +79,28 @@ class CheckCSV:
         df = json_normalize(data['applist'], 'apps')
         df.to_csv('Resources/allgames.csv.gz', compression='gzip', index=False)
 
+    def getGamePrices(self):
+        """Get the pricing for each game in the chosen file, export into price-file"""
+        result = pd.DataFrame()
+        gamelist = pd.read_csv('Resources/validgames.csv')
+        for appid in tqdm(gamelist['appid']):
+            pricedata = requests.get('http://store.steampowered.com/api/appdetails?appids={0}&filters=price_overview&format=json'.format(appid)).json()
+            try:
+                df = json_normalize(pricedata)
+                df.columns = ['currency', 'discount', 'initial', 'price', 'success']
+                del df['discount'], df['initial'], df['success']
+                df.set_value(0, 'appid', int(appid))
+                df['price'] /= 100
+                result = result.append(df)
+                if appid == 359070:
+                    sleep(30)
+            except:
+                continue
+
+        result.to_csv('Resources/gameprices.csv.gz', compression='gzip', index=False)
+
 csv = CheckCSV()
+#csv.getGamePrices()
 #csv.removeLegacy('Resources/formateddatasetMJL.csv.gz')
 #df = pd.read_csv('Resources/formateddatasetMJL.csv.gz', compression='gzip')
 #csv.removeMinGames(df, minGames=5)
