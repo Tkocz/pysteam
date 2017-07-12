@@ -1,6 +1,5 @@
 from __future__ import print_function
 import sys
-
 if sys.version >= '3':
     long = int
 from pyspark.sql import SparkSession
@@ -8,7 +7,6 @@ from pyspark.sql.functions import broadcast
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.recommendation import ALS
-from sklearn.metrics import auc, roc_curve
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 import pandas as pd
 import numpy as np
@@ -24,14 +22,13 @@ class CollaborativFiltering():
     def __init__(self):
         self.spark = SparkSession \
             .builder \
-            .master("local") \
             .appName("pysteam") \
+            .master("local[*]") \
             .getOrCreate()
         self.als = ALS(implicitPrefs=True,
                         userCol="steamid",
                         itemCol="appid", ratingCol="rating")
         self.spark.sparkContext.setLogLevel('OFF')
-        self.spark.sparkContext._conf.set('spark.executor.memory','32g').set('spark.driver.memory','32g').set('spark.driver.maxResultsSize','0')
         self.bestModel = None
         self.bestValidationRmse = None
         self.bestRank = None
@@ -39,7 +36,6 @@ class CollaborativFiltering():
         self.bestNumIter = None
         self.bestAlpha = None
         self.model = None
-        self.spark.sparkContext.getConf()
 
     def fit(self, X, rank=None, nIter=None, lmbda=None, alpha=None):
         """Fit traning data to model."""
@@ -153,6 +149,7 @@ class CollaborativFiltering():
                 predictions = model.transform(optval)
                 validationRmse = evaluator.evaluate(predictions)
                 print("\n")
+                print(validationRmse)
                 print("RMSE (validation) = %f for the model trained with " % validationRmse + \
                       "rank = %d, lambda = %.2f, and numIter = %d. alpha = %d" % (rank, lmbda, numIter, alf))
 
@@ -171,13 +168,13 @@ class CollaborativFiltering():
         self.bestRank, self.bestNumIter, self.bestLambda, self.bestAlpha = bestRank, bestNumIter, bestLambda, bestAlpha
         bestParams = bestParams.append(pd.DataFrame([[numVal, numParam, bestRank, bestNumIter, bestLambda, bestAlpha, bestValidationRmse]]))
         bestParams.columns = ['nValidationIter', 'nValidationParams', 'bestRank', 'bestnIter', 'bestLambda', 'bestAlpha', 'bestRmse']
-        bestParams.to_csv('Resources/params.csv.gz', compression='gzip', mode='w+', )
+        bestParams.to_csv('Resources/params.csv.gz', compression='gzip', mode='a', header=None)
         self.bestModel = bestModel
 
         return bestModel
 
     def setOptParams(self):
-        params = pd.read_csv('Resources/params.csv.gz', compression='gzip')
+        params = pd.read_csv('Resources/params.csv')
 
         self.bestRank = params.bestRank
         self.bestNumIter = params.bestnIter

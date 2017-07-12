@@ -9,7 +9,6 @@ from pyspark.sql import SparkSession
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.recommendation import ALS
-from sklearn.metrics import auc, roc_curve
 import pandas as pd
 import numpy as np
 import itertools

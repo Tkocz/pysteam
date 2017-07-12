@@ -10,7 +10,6 @@ class GameTags():
     def __init__(self):
         self.mb = mechanize.Browser()
 
-
     def getGameTags(self, appids):
         """Get tags of games thats available in steam store"""
 
@@ -35,6 +34,7 @@ class GameTags():
         tag_df = tag_df[tag_df.tags != 0]
         tag_df.to_csv('Resources/gamegenres.csv.gz', compression='gzip')
         return(tag_df)
+
     def converting(self):
         """Convert genres from unicode to string format"""
 

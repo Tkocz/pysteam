@@ -1,6 +1,6 @@
 import json
 import pandas as pd
-from steamwebapi.api import IPlayerService, ISteamUserStats, ISteamWebAPIUtil
+from steamwebapi.api import IPlayerService, ISteamUserStats, ISteamWebAPIUtil,
 from tqdm import *
 
 playerserviceinfo = IPlayerService()
@@ -17,14 +17,14 @@ def achievementprocentage(ach):
     achieved = [i for i in ach if i['achieved'] == 1]
     return len(achieved) / len(ach)
 
-AMOUNT = 1000
+AMOUNT = 10000
 
 iddict = dict()
 
-json_data = [76561198048730871, 76561198180821795, 76561198008911412]
-#json_file = open('Resources/steamkey{0}.json'.format(AMOUNT), 'r')
-#json_data = json.loads(json_file.read())
-#json_file.close()
+#json_data = [76561198048730871, 76561198180821795, 76561198008911412]
+json_file = open('Resources/steamkey{0}.json'.format(AMOUNT), 'r')
+json_data = json.loads(json_file.read())
+json_file.close()
 
 df = pd.DataFrame()
 df.index.names = ['steamID/appID']

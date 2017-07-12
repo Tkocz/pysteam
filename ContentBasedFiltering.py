@@ -3,11 +3,10 @@ import itertools
 from scipy.spatial.distance import cosine
 from pyspark.sql.functions import broadcast
 import pandas as pd
+import numpy as np
 import steamfront
 import requests
 from tqdm import *
-
-from pyspark.sql import SparkSession
 
 class ContentBasedFiltering():
     """Content-based Filtering based on content similarities with Top-N recommendations."""
@@ -94,12 +93,11 @@ class ContentBasedFiltering():
 
     def predict(self, df, nRec=None):
         """Predict similar games from user-owned games based on game genre tags"""
-
         ones = df[df.rating == 1.0]
         preds = pd.DataFrame()
-        users = ones.steamid.unique()
+        users = np.sort(ones.steamid.unique(), axis=0);
         for i in users:
-            sm = self.sm
+            sm = self.sm.copy(deep=True)
             #focus user
             user = ones[(ones.steamid == i)]
             #drop NA-apps
@@ -150,21 +148,17 @@ class ContentBasedFiltering():
                 print(self.sm)
 
 #test CBF
-# from pyspark.sql import SparkSession
-# spark = SparkSession \
-#             .builder \
-#             .appName("pysteam") \
-#             .getOrCreate()
-# cbf = ContentBasedFiltering()
-# cbf.readsimilaritymatrix(100)
+
+#cbf = ContentBasedFiltering()
+#cbf.readsimilaritymatrix(100)
 # #apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
 # #cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
 # #cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 #
 # #227940
-# sm = pd.read_csv('Resources/formateddataset100.csv.gz', compression='gzip')
-# user = sm[((sm.steamid == 87) & (sm.rating == 1) & (sm.appid != 227940))]
-# print(user)
+#sm = pd.read_csv('Resources/formateddataset100.csv.gz', compression='gzip')
+#user = sm[((sm.steamid == 8) & (sm.rating == 1))]
+#print(user)
 # # print(sm.collect())
 # # print(sm[sm.steamid == 0])
 # # cbf.fit(sm)
@@ -180,3 +174,7 @@ class ContentBasedFiltering():
 # #
 # # print(matrix)
 # # print(simmatrix)
+
+#0      1     1   cf        0   42910     1.0    0.708491     4
+#1      1     1   cf        1  437900     1.0    0.000000   145
+#2      1     1   cf        2    7760     1.0    0.448446    37

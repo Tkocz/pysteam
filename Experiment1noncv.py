@@ -1,0 +1,66 @@
+from pyspark.sql.types import *
+import CollaborativeFiltering as CF
+import ContentBasedFiltering as CBF
+import pandas as pd
+import splearn
+from tqdm import *
+import numpy as np
+from time import localtime, strftime
+import CheckCSV
+from Ranking import *
+
+cf = CF.CollaborativFiltering()
+cbf = CBF.ContentBasedFiltering()
+csv = CheckCSV.CheckCSV()
+rank = Rank()
+schema = StructType([
+    StructField("steamid", IntegerType()),
+    StructField("appid", IntegerType()),
+    StructField("rating", DoubleType())
+])
+
+# set envparam PYSPARK_PYTHON = python3
+FILE_SIZE = 10000
+ITER = 1
+MIN_GAMES = 2
+
+
+dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
+print("OnUsers: ", dataset.select('steamid').distinct().count())
+nGames = dataset[dataset.rating == 1.0].groupBy('steamid').count().filter('count>=' + str(MIN_GAMES))
+dataset = dataset.join(nGames, 'steamid').select('steamid', 'appid', 'rating')
+dataset.cache()
+cbf.readsimilaritymatrix(FILE_SIZE)
+print("nUsers: ", dataset.select('steamid').distinct().count())
+print("nApps: ", dataset.select('appid').distinct().count())
+
+
+cf.setOptParams()
+"""ParamOpt"""
+#(dataset, validation) = dataset.randomSplit([0.9, 0.1])
+#cf.paramOpt(validation, 2, 10)
+
+result = pd.DataFrame()
+for i in tqdm(range(ITER)):
+
+    nUsers = dataset.select(dataset.steamid).where(dataset.rating == 1).distinct().count()
+    test = cf.takeSamples(dataset, nUsers)
+    train = dataset.subtract(test)
+    ones = train.where(dataset.rating == 1)
+    cbf_pred = cbf.predict(ones.toPandas())
+    cf_shit = dataset.subtract(ones)
+    cf.fit(train)
+    cf_df = cf.predict(cf_shit)
+    pd_users = test.toPandas()
+    del pd_users['rating']
+    cf_pred = cf_df.toPandas()
+    cf_pred[['steamid', 'appid']] = cf_pred[['steamid', 'appid']].astype(int)
+    predictions = {'cbf': cbf_pred, 'cf': cf_pred}
+    ibar = tqdm(total=2)
+    targets = rank.rank(predictions, pd_users, i)
+    result = result.append(targets)
+
+result = result.sort_values(by=['iter', 'steamid', 'rating'], ascending=[True, True, False])
+print(result)
+result.to_csv('ExperimentData/E1-{0}-{1}-{2}-{3}.csv.gz'.format(FILE_SIZE, ITER, MIN_GAMES, strftime("%Y%m%d%H%M", localtime())),
+              compression='gzip')

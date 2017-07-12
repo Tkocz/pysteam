@@ -1,18 +1,16 @@
 from pyspark.sql.types import *
-from sklearn import cross_validation
-
 import CollaborativeFiltering as CF
 import ContentBasedFiltering as CBF
-from pyspark.sql.functions import broadcast
 import pandas as pd
+import splearn
 from tqdm import *
-from sklearn.model_selection import KFold
-import time
-from CheckCSV import *
+import numpy as np
+from time import localtime, strftime
+import CheckCSV
 
 cf = CF.CollaborativFiltering()
 cbf = CBF.ContentBasedFiltering()
-
+csv = CheckCSV.CheckCSV()
 schema = StructType([
     StructField("steamid", IntegerType()),
     StructField("appid", IntegerType()),
@@ -20,21 +18,25 @@ schema = StructType([
 ])
 
 # set envparam PYSPARK_PYTHON = python3
-
-FILE_SIZE = 10000
-ITER = 2
+FILE_SIZE = 100
+ITER = 1
 NFOLDS = 10
-MIN_GAMES = 5
+MIN_GAMES = 2
+MAX_GAMES = 100000
 
-data = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
-data = broadcast(data)
-pandasset = data.toPandas()
-pdataset = CheckCSV.remove_min_games(pandasset, minGames=MIN_GAMES)
-dataset = cf.spark.createDataFrame(pdataset)
-appnames = cf.spark.read.csv('Resources/allgames.csv.gz', header=True, inferSchema=True)
+dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
+nGames = csv.get_n_owned_games(FILE_SIZE)
+
 cbf.readsimilaritymatrix(FILE_SIZE)
-cf.setOptParams()
-
+print("OnUsers: ", dataset.select('steamid').distinct().count())
+dataset = csv.remove_min_games(dataset.toPandas(), minGames=MIN_GAMES, maxgames=MAX_GAMES)
+dataset = cf.spark.createDataFrame(dataset)
+dataset.cache()
+print("nUsers: ", dataset.select('steamid').distinct().count())
+print("nApps: ", dataset.select('appid').distinct().count())
+print("tUsers: ", dataset.select('steamid').count())
+print("tApps:", dataset.select('appid').count())
+#cf.setOptParams()
 """ParamOpt"""
 # (training, validation) = dataset.randomSplit([0.9, 0.1])
 # (train, test) = training.randomSplit([0.8, 0.2])
@@ -42,25 +44,28 @@ cf.setOptParams()
 
 result = pd.DataFrame()
 folds = [(1.0 / NFOLDS)] * NFOLDS
-kf = KFold(n_splits=10)
+
 for i in tqdm(range(ITER)):
 
     splits = dataset.randomSplit(folds)
 
+    #TODO: fix stratefied fold with even distribution
+
     for fold, test in enumerate(tqdm(splits)):
-        datasetc = dataset
+
         nUsers = test.select(test.steamid).where(test.rating == 1).distinct().count()
-        users = cf.takeSamples(test, nUsers)
-        cbf_test = test.subtract(users)
-        cbf_pred = cbf.predict(cbf_test.toPandas())
-        train = datasetc.subtract(test)
+        sampledtest = cf.takeSamples(test, nUsers)
+        train = dataset.subtract(test)
+        ones = train.toPandas()
+        ones = ones.where(ones.rating == 1)
+        cbf_pred = cbf.predict(ones)
         cf.fit(train)
         cf_df = cf.predict(test)
-        pd_users = users.toPandas()
+        pd_users = sampledtest.toPandas()
         del pd_users['rating']
         cf_pred = cf_df.toPandas()
         cf_pred[['steamid', 'appid']] = cf_pred[['steamid', 'appid']].astype(int)
-        iterators = {'cf': cf_pred, 'cbf': cbf_pred}
+        iterators = {'cbf': cbf_pred, 'cf': cf_pred}
 
         for type, data in iterators.items():
 
@@ -72,9 +77,10 @@ for i in tqdm(range(ITER)):
             targets.insert(0, 'iter', i + 1)
             targets.insert(1, 'fold', fold + 1)
             targets.insert(2, 'type', type)
+            #targets = targets.merge(nGames, how='inner', on='steamid')
             result = result.append(targets)
-
+        break
 result = result.sort_values(by=['iter', 'fold', 'steamid', 'rating'], ascending=[True, True, True, False])
 print(result)
-result.to_csv('ExperimentData/E1-{0}-{1}-{2}-{3}-{4}.csv.gz'.format(FILE_SIZE, ITER, NFOLDS, MIN_GAMES, time.strftime("%Y%m%d%H%m")),
+result.to_csv('ExperimentData/E1-{0}-{1}-{2}-{3}-{4}.csv.gz'.format(FILE_SIZE, ITER, NFOLDS, MIN_GAMES, strftime("%Y%m%d%H%M", localtime())),
               compression='gzip')

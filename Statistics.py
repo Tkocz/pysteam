@@ -1,5 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+import CheckCSV as CC
 
 plt.style.use('ggplot')
 
@@ -8,16 +10,34 @@ class Statistics:
 
     def evaluateExperiment(self, path):
         """Evaluate binary experiment data"""
+        csv = CC.CheckCSV()
+        ngames = csv.get_n_owned_games(100)
 
         data = pd.read_csv(path, compression='gzip',
-                           usecols=['iter', 'fold', 'type', 'steamid', 'appid', 'rating', 'prediction', 'rank'])
-        print(data.groupby(by=['type'], axis=0).mean()['rank'])
-        axe = data.groupby(by=['type', 'steamid'], axis=0).mean()['rank'].reset_index()
-        fig = plt.figure()
-        axe[axe.type == 'cbf'].plot(fig=fig)
-        axe[axe.type == 'cf'].plot(fig=fig)
-        #axe.plot()
+                           usecols=['iter', 'type', 'steamid', 'appid', 'rating', 'prediction', 'rank'])
+        data = pd.merge(data, ngames, on='steamid')
+        print(data)
+        with pd.option_context('display.max_rows', data.shape[0], 'display.max_columns', data.shape[1]):
+            print(data.groupby(by=['type'], axis=0).mean()['rank'])
+            print(data.groupby(by=['type', 'steamid', 'appid'], axis=0).mean()['rank'])
+            print(data.groupby(by=['type', 'steamid'], axis=0).mean()['rank'])
+
+
+        all = np.sort(np.sort(data.steamid.unique()))
+        CBF = np.sort(data[data.type == 'cbf'].steamid.unique())
+        CF = np.sort(data[data.type == 'cf'].steamid.unique())
+        if(np.array_equal(all, CBF) and np.array_equal(all, CF) and np.array_equal(CBF, CF)):
+            print('PASS - Equal')
+        else:
+            print('FAIL - Not Equal')
+        print(all)
+        print(CBF)
+        print(CF)
+        axe = data.groupby(by=['type','nGames'], axis=0).mean()['rank'].reset_index()
+        print(axe)
+        axe.plot()
         plt.show()
+        csv.get_n_owned_games(100)
 
     def evaluateUser(self, path, minGames=0, maxGames=float('inf')):
         """Evaluate distribution of games and users"""
@@ -41,6 +61,8 @@ class Statistics:
 
 stat = Statistics()
 
-stat.evaluateUser('Resources/formateddataset10000.csv.gz', minGames=0, maxGames=1000)
+#stat.evaluateUser('Resources/formateddataset10000.csv.gz', minGames=0, maxGames=1000)
 
-#stat.evaluateExperiment('ExperimentData/E1-100-2-10-5-201703130903.csv.gz')
+stat.evaluateExperiment('ExperimentData/E1-100-1-2-201707101925.csv.gz')
+
+#Titta på variationen mellan spel spelar äger (usertags) / entropy / consinesimilarity och antal spel
