@@ -24,7 +24,9 @@ class CollaborativFiltering():
             .builder \
             .appName("pysteam") \
             .master("local[*]") \
+            .config("spark.driver.memory", "16g") \
             .getOrCreate()
+
         self.als = ALS(implicitPrefs=True,
                         userCol="steamid",
                         itemCol="appid", ratingCol="rating")
@@ -194,13 +196,12 @@ class CollaborativFiltering():
         target = df.subtract(newdf)
         return newdf, target
 
-    def takeSamples(self, df, nUsers):
-        ones = df[df.rating == 1.0].toPandas().values
-        indexes = np.array(np.unique(ones[:, 0], return_index=True)[1], dtype=int)
-        r_indexes = np.random.choice(indexes, nUsers, replace=False)
-        newpdf = pd.DataFrame(ones[r_indexes], columns=["steamid", "appid", "rating"])
-        newpdf[["steamid", "appid"]] = newpdf[["steamid", "appid"]].astype(int)
-        target = self.spark.createDataFrame(newpdf)
+    def takeSamples(self, df):
+        df.groupby()
+        ones = df[df.rating == 1.0].toPandas()
+        fn = lambda obj: obj.loc[np.random.choice(obj.index, 1, False), :]
+        result = ones.groupby(by=['steamid'], as_index=False).apply(fn)
+        target = self.spark.createDataFrame(result)
         target = target.sort(['steamid'], ascending=True)
         return target
 

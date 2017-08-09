@@ -2,12 +2,15 @@ from pyspark.sql.types import *
 import CollaborativeFiltering as CF
 import ContentBasedFiltering as CBF
 import pandas as pd
-import splearn
+import sklearn
 from tqdm import *
 import numpy as np
 from time import localtime, strftime
 import CheckCSV
 from Ranking import *
+from multiprocessing import Pool
+
+#http://127.0.0.1:4040/jobs/
 
 cf = CF.CollaborativFiltering()
 cbf = CBF.ContentBasedFiltering()
@@ -21,8 +24,10 @@ schema = StructType([
 
 # set envparam PYSPARK_PYTHON = python3
 FILE_SIZE = 10000
-ITER = 1
+ITER = 30
 MIN_GAMES = 2
+NUM_PARTITIONS = 10
+NUM_CORES = 8
 
 
 dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
@@ -41,13 +46,24 @@ cf.setOptParams()
 #cf.paramOpt(validation, 2, 10)
 
 result = pd.DataFrame()
-for i in tqdm(range(ITER)):
-
+for i in tqdm(range(ITER), leave=True):
     nUsers = dataset.select(dataset.steamid).where(dataset.rating == 1).distinct().count()
-    test = cf.takeSamples(dataset, nUsers)
+    test = cf.takeSamples(dataset)
     train = dataset.subtract(test)
     ones = train.where(dataset.rating == 1)
-    cbf_pred = cbf.predict(ones.toPandas())
+    pdones = ones.toPandas()
+    gb = pdones.groupby(by=['steamid'], as_index=False)
+    dataframe = pd.DataFrame([i for i in gb])
+    del dataframe[0]
+    cbftest = dataframe.values.flatten()
+    split = np.array_split(cbftest, NUM_PARTITIONS)
+    cbf_pred = pd.DataFrame(columns=['steamid', 'appid', 'rating', 'prediction'])
+    for r in tqdm(split):
+        pool = Pool(NUM_CORES)
+        cbf_pred = cbf_pred.append(pool.map(cbf.predict, r))
+        pool.close()
+        pool.join()
+    cbf_pred[['steamid', 'appid']] = cbf_pred[['steamid', 'appid']].astype(int)
     cf_shit = dataset.subtract(ones)
     cf.fit(train)
     cf_df = cf.predict(cf_shit)
@@ -56,7 +72,6 @@ for i in tqdm(range(ITER)):
     cf_pred = cf_df.toPandas()
     cf_pred[['steamid', 'appid']] = cf_pred[['steamid', 'appid']].astype(int)
     predictions = {'cbf': cbf_pred, 'cf': cf_pred}
-    ibar = tqdm(total=2)
     targets = rank.rank(predictions, pd_users, i)
     result = result.append(targets)
 

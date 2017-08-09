@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import CheckCSV as CC
 
@@ -11,17 +12,15 @@ class Statistics:
     def evaluateExperiment(self, path):
         """Evaluate binary experiment data"""
         csv = CC.CheckCSV()
-        ngames = csv.get_n_owned_games(100)
+        ngames = csv.get_n_owned_games(10000)
 
         data = pd.read_csv(path, compression='gzip',
                            usecols=['iter', 'type', 'steamid', 'appid', 'rating', 'prediction', 'rank'])
         data = pd.merge(data, ngames, on='steamid')
-        print(data)
         with pd.option_context('display.max_rows', data.shape[0], 'display.max_columns', data.shape[1]):
             print(data.groupby(by=['type'], axis=0).mean()['rank'])
-            print(data.groupby(by=['type', 'steamid', 'appid'], axis=0).mean()['rank'])
-            print(data.groupby(by=['type', 'steamid'], axis=0).mean()['rank'])
-
+            #print(data.groupby(by=['type', 'steamid', 'appid'], axis=0).mean()['rank'])
+            #print(data.groupby(by=['type', 'steamid'], axis=0).mean()['rank'])
 
         all = np.sort(np.sort(data.steamid.unique()))
         CBF = np.sort(data[data.type == 'cbf'].steamid.unique())
@@ -33,11 +32,19 @@ class Statistics:
         print(all)
         print(CBF)
         print(CF)
-        axe = data.groupby(by=['type','nGames'], axis=0).mean()['rank'].reset_index()
-        print(axe)
-        axe.plot()
+        note = np.setdiff1d(CF, CBF)
+        print(note)
+        cfaxe = data[(data.type == 'cf') & (data.nGames <= 1000)]
+        cbfaxe = data[(data.type == 'cbf') & (data.nGames <= 1000)]
+        sns.set()
+
+        cfg = sns.jointplot(x="nGames", y="rank", data=cfaxe, kind='kde', color="b")
+        cfg.set_axis_labels("Number of Games", "Rank")
+        cfg.fig.suptitle('CF')
+        cbfg = sns.jointplot(x="nGames", y="rank", data=cbfaxe[cbfaxe.nGames <= 1000], kind='kde', color="r")
+        cbfg.set_axis_labels("Number of Games", "Rank")
+        cbfg.fig.suptitle('CBF')
         plt.show()
-        csv.get_n_owned_games(100)
 
     def evaluateUser(self, path, minGames=0, maxGames=float('inf')):
         """Evaluate distribution of games and users"""
@@ -63,6 +70,6 @@ stat = Statistics()
 
 #stat.evaluateUser('Resources/formateddataset10000.csv.gz', minGames=0, maxGames=1000)
 
-stat.evaluateExperiment('ExperimentData/E1-100-1-2-201707101925.csv.gz')
+stat.evaluateExperiment('ExperimentData/E1-100-30-2-201708082252.csv.gz')
 
 #Titta på variationen mellan spel spelar äger (usertags) / entropy / consinesimilarity och antal spel

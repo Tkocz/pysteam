@@ -2,7 +2,6 @@ from pyspark.sql.types import *
 import CollaborativeFiltering as CF
 import ContentBasedFiltering as CBF
 import pandas as pd
-import splearn
 from tqdm import *
 import numpy as np
 from time import localtime, strftime
@@ -22,21 +21,16 @@ FILE_SIZE = 100
 ITER = 1
 NFOLDS = 10
 MIN_GAMES = 2
-MAX_GAMES = 100000
 
 dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
-nGames = csv.get_n_owned_games(FILE_SIZE)
-
-cbf.readsimilaritymatrix(FILE_SIZE)
 print("OnUsers: ", dataset.select('steamid').distinct().count())
-dataset = csv.remove_min_games(dataset.toPandas(), minGames=MIN_GAMES, maxgames=MAX_GAMES)
-dataset = cf.spark.createDataFrame(dataset)
+nGames = dataset[dataset.rating == 1.0].groupBy('steamid').count().filter('count>=' + str(MIN_GAMES))
+dataset = dataset.join(nGames, 'steamid').select('steamid', 'appid', 'rating')
 dataset.cache()
+cbf.readsimilaritymatrix(FILE_SIZE)
 print("nUsers: ", dataset.select('steamid').distinct().count())
 print("nApps: ", dataset.select('appid').distinct().count())
-print("tUsers: ", dataset.select('steamid').count())
-print("tApps:", dataset.select('appid').count())
-#cf.setOptParams()
+cf.setOptParams()
 """ParamOpt"""
 # (training, validation) = dataset.randomSplit([0.9, 0.1])
 # (train, test) = training.randomSplit([0.8, 0.2])
@@ -54,11 +48,13 @@ for i in tqdm(range(ITER)):
     for fold, test in enumerate(tqdm(splits)):
 
         nUsers = test.select(test.steamid).where(test.rating == 1).distinct().count()
-        sampledtest = cf.takeSamples(test, nUsers)
+        sampledtest = cf.takeSamples(test)
         train = dataset.subtract(test)
         ones = train.toPandas()
         ones = ones.where(ones.rating == 1)
         cbf_pred = cbf.predict(ones)
+        print(cbf_pred.info())
+        print(cbf_pred)
         cf.fit(train)
         cf_df = cf.predict(test)
         pd_users = sampledtest.toPandas()

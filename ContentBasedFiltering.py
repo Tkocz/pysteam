@@ -1,6 +1,8 @@
 from __future__ import print_function
 import itertools
 from scipy.spatial.distance import cosine
+
+from pyspark.sql import SparkSession
 from pyspark.sql.functions import broadcast
 import pandas as pd
 import numpy as np
@@ -93,6 +95,7 @@ class ContentBasedFiltering():
 
     def predict(self, df, nRec=None):
         """Predict similar games from user-owned games based on game genre tags"""
+
         ones = df[df.rating == 1.0]
         preds = pd.DataFrame()
         users = np.sort(ones.steamid.unique(), axis=0);
