@@ -197,7 +197,7 @@ class CollaborativFiltering():
         return newdf, target
 
     def takeSamples(self, df):
-        df.groupby()
+
         ones = df[df.rating == 1.0].toPandas()
         fn = lambda obj: obj.loc[np.random.choice(obj.index, 1, False), :]
         result = ones.groupby(by=['steamid'], as_index=False).apply(fn)

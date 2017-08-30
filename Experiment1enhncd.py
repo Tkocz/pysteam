@@ -53,8 +53,6 @@ for i in tqdm(range(ITER)):
         ones = train.toPandas()
         ones = ones.where(ones.rating == 1)
         cbf_pred = cbf.predict(ones)
-        print(cbf_pred.info())
-        print(cbf_pred)
         cf.fit(train)
         cf_df = cf.predict(test)
         pd_users = sampledtest.toPandas()

@@ -22,26 +22,26 @@ class Statistics:
             #print(data.groupby(by=['type', 'steamid', 'appid'], axis=0).mean()['rank'])
             #print(data.groupby(by=['type', 'steamid'], axis=0).mean()['rank'])
 
-        all = np.sort(np.sort(data.steamid.unique()))
-        CBF = np.sort(data[data.type == 'cbf'].steamid.unique())
-        CF = np.sort(data[data.type == 'cf'].steamid.unique())
-        if(np.array_equal(all, CBF) and np.array_equal(all, CF) and np.array_equal(CBF, CF)):
+        CBF = data[data.type == 'cbf']
+        CF = data[data.type == 'cf']
+
+        if(np.array_equal(CBF[['steamid', 'appid']], CF[['steamid', 'appid']]) and CBF.values.shape == CF.values.shape):
             print('PASS - Equal')
         else:
             print('FAIL - Not Equal')
-        print(all)
-        print(CBF)
-        print(CF)
-        note = np.setdiff1d(CF, CBF)
-        print(note)
-        cfaxe = data[(data.type == 'cf') & (data.nGames <= 1000)]
-        cbfaxe = data[(data.type == 'cbf') & (data.nGames <= 1000)]
+
+        axe = data[(data.nGames <= 1000)].groupby(by=['type', 'nGames'], axis=0).mean()['rank'].reset_index()
+        g = sns.lmplot(y='rank', x='nGames', data=axe, hue='type', fit_reg=False)
+        axe1 = data[(data.nGames <= 1000)].groupby(by=['type', 'appid'], axis=0).mean()['rank'].reset_index()
+        g1 = sns.lmplot(y='rank', x='appid', data=axe1, hue='type', fit_reg=False)
+        cfaxe = data[(data.type == 'cf') & (data.nGames <= 100)]
+        cbfaxe = data[(data.type == 'cbf') & (data.nGames <= 100)]
         sns.set()
 
         cfg = sns.jointplot(x="nGames", y="rank", data=cfaxe, kind='kde', color="b")
         cfg.set_axis_labels("Number of Games", "Rank")
         cfg.fig.suptitle('CF')
-        cbfg = sns.jointplot(x="nGames", y="rank", data=cbfaxe[cbfaxe.nGames <= 1000], kind='kde', color="r")
+        cbfg = sns.jointplot(x="nGames", y="rank", data=cbfaxe, kind='kde', color="r")
         cbfg.set_axis_labels("Number of Games", "Rank")
         cbfg.fig.suptitle('CBF')
         plt.show()
@@ -70,6 +70,13 @@ stat = Statistics()
 
 #stat.evaluateUser('Resources/formateddataset10000.csv.gz', minGames=0, maxGames=1000)
 
-stat.evaluateExperiment('ExperimentData/E1-100-30-2-201708082252.csv.gz')
+stat.evaluateExperiment('ExperimentData/E1-10000-30-2-201708172154.csv.gz')
 
 #Titta på variationen mellan spel spelar äger (usertags) / entropy / consinesimilarity och antal spel
+#Kolla om det skilelr mellan usertags och latenta predictioner genom att mätta medelvärdet för ranken för grupperade spel.
+#Hur vanligt förekommande är spel
+#variance impoprtence med ranfomforest med variabler som variance, genere, frekvence med.
+# Vad kan vi se utifrån steam tjänst användarens preferencer.
+# speltid som heaurustic.
+# I vilket lägge ska jag använda repektive algorith beroendes av en unik spelare.
+# Finns det nått intressant med att titta på att en spealr faktiskt köper ett spel och sedan spelar det.

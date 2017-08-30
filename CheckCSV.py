@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import numpy as np
 from pandas.io.json import json_normalize
 from time import sleep
 from tqdm import *
@@ -12,12 +13,17 @@ class CheckCSV:
 
         df = pd.read_csv(path, compression='gzip')
         print(df.shape)
-        gamelist = pd.read_csv('Resources/validgames.csv', index_col=[0])
+        gamelist = pd.read_csv('Resources/Genres.csv.gz', usecols=['appid'])
+        gamelist = pd.DataFrame(gamelist.appid.unique(), columns=['appid'])
+        print(gamelist)
         filter_df = pd.merge(df, gamelist, on='appid', how='inner')
         filter_df = filter_df.dropna()
         filter_df = filter_df.sort_values(['steamid', 'appid'], ascending=[True, True])
+        print('done')
         print(filter_df.shape)
-        filter_df.to_csv(path, compression='gzip', columns=['steamid', 'appid', 'rating'], mode='w+', index=None)
+        print(filter_df)
+        print(np.setdiff1d(df['appid'].unique(), filter_df['appid'].unique()))
+        filter_df.to_csv(path, compression='gzip', columns=['steamid', 'appid', 'rating'], index=None)
 
     @staticmethod
     def remove_min_games(df, minGames=0):
@@ -93,9 +99,10 @@ class CheckCSV:
         df = json_normalize(data['applist'], 'apps')
         df.to_csv('Resources/allgames.csv.gz', compression='gzip', index=False)
 
+
 #csv = CheckCSV()
 #csv.get_n_owned_games('Resources/formateddatasetMJL.csv.gz')
-#csv.removeLegacy('Resources/formateddatasetMJL.csv.gz')
+#csv.removeLegacy('Resources/formateddataset10000.csv.gz')
 #df = pd.read_csv('Resources/formateddatasetMJL.csv.gz', compression='gzip')
 #csv.removeMinGames(df, minGames=5)
 #csv.getValidGamesList()

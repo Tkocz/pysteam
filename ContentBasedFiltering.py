@@ -20,7 +20,7 @@ class ContentBasedFiltering():
         self.gm = None
         self.sm = None
         self.client = steamfront.Client()
-        self.apps = pd.read_csv('Resources/Genres.csv')
+        self.apps = pd.read_csv('Resources/Genres.csv.gz')
 
     def fit(self, X=None, nGames = None):
         """Fit traning data to model."""
@@ -153,10 +153,11 @@ class ContentBasedFiltering():
 #test CBF
 
 #cbf = ContentBasedFiltering()
-#cbf.readsimilaritymatrix(100)
-# #apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
-# #cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
-# #cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
+#cbf.readsimilaritymatrix(10000)
+#apps = pd.read_csv('Resources/formateddataset10000.csv.gz', compression='gzip')
+#cbf.generateGameGenreMatrix(apps, save=True, file_size=10000)
+#cbf.gm = pd.read_csv('Resources/gamematrix{0}.csv.gz'.format(10000), compression='gzip', index_col=['appid'], delimiter=',')
+#cbf.generateSimMatrix(cbf.gm, save=True, file_size=10000)
 #
 # #227940
 #sm = pd.read_csv('Resources/formateddataset100.csv.gz', compression='gzip')

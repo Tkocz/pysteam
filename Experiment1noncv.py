@@ -1,3 +1,4 @@
+from pyspark.sql.functions import explode, udf
 from pyspark.sql.types import *
 import CollaborativeFiltering as CF
 import ContentBasedFiltering as CBF
@@ -9,6 +10,7 @@ from time import localtime, strftime
 import CheckCSV
 from Ranking import *
 from multiprocessing import Pool
+from pyspark.sql import functions as F
 
 #http://127.0.0.1:4040/jobs/
 
@@ -30,7 +32,7 @@ NUM_PARTITIONS = 10
 NUM_CORES = 8
 
 
-dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format(FILE_SIZE), header=True, schema=schema)
+dataset = cf.spark.read.csv('Resources/formateddataset{0}.csv.gz'.format('PTime10000'), header=True, schema=schema)
 print("OnUsers: ", dataset.select('steamid').distinct().count())
 nGames = dataset[dataset.rating == 1.0].groupBy('steamid').count().filter('count>=' + str(MIN_GAMES))
 dataset = dataset.join(nGames, 'steamid').select('steamid', 'appid', 'rating')
@@ -49,6 +51,8 @@ result = pd.DataFrame()
 for i in tqdm(range(ITER), leave=True):
     nUsers = dataset.select(dataset.steamid).where(dataset.rating == 1).distinct().count()
     test = cf.takeSamples(dataset)
+    #print(test.show())
+    #print(dataset.where("steamid=1" and "rating=1.0").show())
     train = dataset.subtract(test)
     ones = train.where(dataset.rating == 1)
     pdones = ones.toPandas()
@@ -66,6 +70,9 @@ for i in tqdm(range(ITER), leave=True):
     cbf_pred[['steamid', 'appid']] = cbf_pred[['steamid', 'appid']].astype(int)
     cf_shit = dataset.subtract(ones)
     cf.fit(train)
+    #userrecs = cf.model.recommendForAllUsers(dataset.select('appid').distinct().count())
+    #cf_df = userrecs.withColumn("recommendations", explode('recommendations')).selectExpr("steamid", "recommendations.*")
+    #cf_df.sort(['steamid', 'prediction'], ascending=[True, False])
     cf_df = cf.predict(cf_shit)
     pd_users = test.toPandas()
     del pd_users['rating']
