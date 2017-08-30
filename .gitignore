@@ -1,6 +1,6 @@
 .idea/
 .DS_Store
 Resources/
-ExperimentalData/
+ExperimentData/
 __pycache__/
 spark-warehouse/
