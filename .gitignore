@@ -4,3 +4,4 @@ Resources/
 ExperimentData/
 __pycache__/
 spark-warehouse/
+*.pyc
