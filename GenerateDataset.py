@@ -1,6 +1,6 @@
 import json
 import pandas as pd
-from steamwebapi.api import IPlayerService, ISteamUserStats, ISteamWebAPIUtil,
+from steamwebapi.api import IPlayerService, ISteamUserStats
 from tqdm import *
 
 playerserviceinfo = IPlayerService()
@@ -21,7 +21,6 @@ AMOUNT = 10000
 
 iddict = dict()
 
-#json_data = [76561198048730871, 76561198180821795, 76561198008911412]
 json_file = open('Resources/steamkey{0}.json'.format(AMOUNT), 'r')
 json_data = json.loads(json_file.read())
 json_file.close()

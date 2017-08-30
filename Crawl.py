@@ -2,7 +2,11 @@ from __future__ import print_function
 from steamwebapi.api import ISteamUser, IPlayerService, ISteamUserStats
 import json
 
-steamID = [76561198048730871, 76561198180821795, 76561198008911412]
+
+json_file = open('Resources/orgkey.json', 'r')
+steamID = json.loads(json_file.read())
+json_file.close()
+
 steamuserinfo = ISteamUser()
 playerserviceinfo = IPlayerService()
 
